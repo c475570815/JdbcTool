@@ -1,37 +1,26 @@
-# JdbcTool
-
-#### 介绍
-jdbc多源操作工具
-
-#### 软件架构
-软件架构说明
-
-
-#### 安装教程
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 使用说明
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
-
-
-#### 码云特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  码云官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解码云上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是码云最有价值开源项目，是码云综合评定出的优秀开源项目
-5.  码云官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  码云封面人物是一档用来展示码云会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+#author cyh
+#Date 2020/4/11
+####jdbc多源工具类####
+#目前有三种方式生成数据源
+#1.在配置文件中配置不同类型的数据库通过jdbc连接时的相关参数(read-config  为 true)
+#2.直接代码注入数据库连接串和使用的数据库驱动(read-config  为 false)
+#3.在实例化JdbcDateBase时 传入DbInfo参数为空则以配置文件中主数据库配置(spring.datasource)参数来生成数据源
+#主数据库配置示例(*****使用这个依赖包配置文件中必须有一个主数据库配置)
+spring:
+  application:
+    name: singlewood-provider
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/singlewood?serverTimezone=UTC
+    username: singlewood
+    password: singlewood
+    driver-class-name: com.mysql.cj.jdbc.Driver
+#其他类型数据库配置
+db-config:
+  defalut-config-list:
+    - {db-type: mysql,driver-class-name: com.mysql.cj.jdbc.Driver, port: 3306, url-template: 'jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}'}
+    - {db-type: oracle,driver-class-name: oracle.jdbc.driver.OracleDriver, port: 1521, url-template: 'jdbc:oracle:thin:@{{IP}}:{{PORT}}/{{END_PARAM}}'}
+    - {db-type: postgres,driver-class-name: org.postgresql.Driver, port: 3306, url-template: 'jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}'}
+  read-config: false
+#作为jar包被其他项目依赖时在classpath下META-INF/spring.factories 加入以下内容
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+indi.cyh.jdbctool.modle.DbConfig
