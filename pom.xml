@@ -84,7 +84,7 @@
                             <addClasspath>true</addClasspath>
                             <!-- 这个jar所依赖的jar包添加classPath的时候的前缀，如果这个
                             jar本身和依赖包在同一级目录，则不需要添加-->
-<!--                            <classpathPrefix>lib/</classpathPrefix>-->
+                            <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
                         <manifestEntries>
                             <!-- 在Class-Path下添加配置文件的路径 -->
@@ -110,36 +110,35 @@
                     </includes>
                     <excludes>
                         <exclude>**/slf4j/*</exclude>
-
+                        <!--排除测试使用的监听事件-->
                         <exclude>**/event/*</exclude>
-
+                        <!--排除测试使用的主函数-->
                         <exclude>**/JdbcToolApplication.*</exclude>
                     </excludes>
                 </configuration>
             </plugin>
 
-
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-dependency-plugin</artifactId>-->
-<!--                <version>2.9</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>copy-dependencies</id>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>copy-dependencies</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <type>jar</type>-->
-<!--                            <includeTypes>jar</includeTypes>-->
-<!--                            <outputDirectory>-->
-<!--                                ${project.build.directory}/lib-->
-<!--                            </outputDirectory>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.9</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <type>jar</type>
+                            <includeTypes>jar</includeTypes>
+                            <outputDirectory>
+                                ${project.build.directory}/lib
+                            </outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

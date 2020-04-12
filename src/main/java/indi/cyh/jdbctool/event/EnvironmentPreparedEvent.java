@@ -7,7 +7,6 @@ import indi.cyh.jdbctool.modle.DbConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,23 +17,35 @@ public class EnvironmentPreparedEvent implements ApplicationListener<Application
 
     @Autowired
     private DbConfig config;
+
     public void onApplicationEvent(ApplicationStartedEvent applicationStartedEvent) {
-        DbInfo dbInfo = new DbInfo() {{
-            setDriverClassName("com.mysql.cj.jdbc.Driver");
-            setConnectStr("jdbc:mysql://127.0.0.1:3306/singlewood?serverTimezone=UTC");
-            setDbType("mysql");
-            setIp("127.0.0.1");
-            setPort(3306);
-            setLogoinName("root");
-            setPwd("root");
-            setEndParam("singlewood?serverTimezone=UTC");
-        }};
-        try {
-            JdbcDateBase db = new JdbcDateBase(dbInfo,config);
-            JdbcTemplate template = db.getJdbcTemplate();
-            System.out.println(template.queryForObject("SELECT Count(*) FROM cp_card", int.class).toString());
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        for (int i = 1; i <= 50; i++) {
+            System.out.println("");
+            System.out.println("thread-" + i + "    start!");
+            System.out.println("");
+            final String threadNumber = String.valueOf(i);
+            new Thread(() -> {
+                DbInfo dbInfo = new DbInfo() {{
+                    setDriverClassName("com.mysql.cj.jdbc.Driver");
+                    setConnectStr("jdbc:mysql://127.0.0.1:3306/singlewood?serverTimezone=UTC");
+                    setDbType("mysql");
+                    setIp("127.0.0.1");
+                    setPort(3306);
+                    setLogoinName("root");
+                    setPwd("root");
+                    setEndParam("singlewood?serverTimezone=UTC");
+                }};
+                try {
+                    JdbcDateBase db = new JdbcDateBase(dbInfo, config);
+                    System.out.println("");
+                    System.out.println(db.queryOneRow("SELECT Count(*) FROM cp_card", int.class));
+                    System.out.println("thread-" + threadNumber + "end");
+                    System.out.println("");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }).start();
         }
     }
+
 }
