@@ -1,18 +1,29 @@
 package indi.cyh.jdbctool.main;
 
-import indi.cyh.jdbctool.modle.DbInfo;
+import indi.cyh.jdbctool.modle.ConvertType;
 import indi.cyh.jdbctool.modle.DbConfig;
+import indi.cyh.jdbctool.modle.DbInfo;
+import indi.cyh.jdbctool.modle.PageQueryInfo;
 import indi.cyh.jdbctool.tool.StringTool;
+import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.lang.Nullable;
+import sun.misc.BASE64Encoder;
 
 import javax.sql.DataSource;
-import java.sql.ResultSetMetaData;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @ClassName JdbcDateBase
@@ -31,6 +42,13 @@ public class JdbcDateBase {
     static final String MAIN_DB_URL_PWD_PATH = "spring.datasource.password";
     static final String MAIN_DB_URL_DRIVER_PATH = "spring.datasource.driver-class-name";
 
+    private static final Pattern selectPattern;
+    private static final Pattern fromPattern;
+    private static final Pattern PATTERN_BRACKET;
+    private static final Pattern PATTERN_SELECT;
+    private static final Pattern PATTERN_DISTINCT;
+    private static final Pattern rxOrderBy;
+
     private static DataSourceBuilder builder = DataSourceBuilder.create();
 
     private static final ReentrantReadWriteLock rrwl = new ReentrantReadWriteLock();
@@ -40,6 +58,12 @@ public class JdbcDateBase {
     static {
         rl = rrwl.readLock();
         wl = rrwl.writeLock();
+        selectPattern = Pattern.compile("\\s*(SELECT|EXECUTE|CALL)\\s", 78);
+        fromPattern = Pattern.compile("\\s*FROM\\s", 74);
+        PATTERN_BRACKET = Pattern.compile("(\\(|\\)|[^\\(\\)]*)");
+        PATTERN_SELECT = Pattern.compile("select([\\W\\w]*)from", 78);
+        PATTERN_DISTINCT = Pattern.compile("\\A\\s+DISTINCT\\s", 78);
+        rxOrderBy = Pattern.compile("\\bORDER\\s+BY\\s+([\\W\\w]*)(ASC|DESC)+", 78);
     }
 
     public DbInfo dbInfo;
@@ -78,9 +102,10 @@ public class JdbcDateBase {
         loadDatebase(entity);
     }
 
+
     private void loadingMainDbConfig(DbInfo entity) {
         YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
-        String configFileName = StringTool.isNotEmpty(defaultConfig.getConfigFileName()) ? defaultConfig.getConfigFileName() : DEFAULT_CONFIG_NAME;
+        String configFileName = StringTool.isEmpty(defaultConfig.getConfigFileName()) ? DEFAULT_CONFIG_NAME : defaultConfig.getConfigFileName();
         yaml.setResources(new ClassPathResource(configFileName));
         Properties properties = yaml.getObject();
         entity.setConnectStr((String) properties.get(MAIN_DB_URL_PATH));
@@ -113,7 +138,7 @@ public class JdbcDateBase {
                 entity.setConnectStr(getDbConnectUrl(config, entity));
                 entity.setDriverClassName(config.getDriverClassName());
                 entity.setUrlTemplate(config.getUrlTemplate());
-                if (!StringTool.isNotEmpty(entity.getIp())) {
+                if (StringTool.isEmpty(entity.getIp())) {
                     entity.setIp(config.getIp());
                 }
                 return;
@@ -151,6 +176,16 @@ public class JdbcDateBase {
         return (T) template.queryForObject(sql, requiredType, params);
     }
 
+//    public <T implements RowMapper> List<T> queryListObject(String sql, Class<T> requiredType, @Nullable Object... params) {
+//        JdbcTemplate template = getJdbcTemplate();
+//        return template.query(sql, new T(), params);
+//    }
+
+    public Map queryForMap(String sql, @Nullable Object... params) {
+        JdbcTemplate template = getJdbcTemplate();
+        return template.queryForMap(sql, params);
+    }
+
     /**
      * 用于执行 DML 语句(INSERT、UPDATE、DELETE)
      *
@@ -173,9 +208,223 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/4/11 18:11
      **/
-    public List<Map<String, Object>> queryListMap(String sql) {
+    public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
         JdbcTemplate template = getJdbcTemplate();
-        return template.queryForList(sql);
+        return template.queryForList(sql, params);
+    }
+
+    public List<String> queryListString(String sql, @Nullable Object... params) {
+        return getJdbcTemplate().query(sql, new RowMapper<String>() {
+            public String mapRow(ResultSet resultSet, int i) throws SQLException {
+                return resultSet.getString(1);
+            }
+        });
+    }
+
+    /**
+     * 查询分页数据
+     *
+     * @param serviceSql 原始sql
+     * @param page       页数
+     * @param rows       每页行数
+     * @return java.lang.Object
+     * @author CYH
+     * @date 2020/4/28 0028 16:03
+     **/
+    public Object queryPageDate(String serviceSql, Integer page, Integer rows, @Nullable Object... params) throws Exception {
+        Map<String, Object> resMap = new HashMap<>();
+        PageQueryInfo queryInfo = getPageQueryInfo(page, rows, serviceSql);
+        resMap.put("total", queryOneRow(queryInfo.getCountSql(), int.class, params));
+        List<Map<String, Object>> pageDate = queryListMap(queryInfo.getPageSql(), params);
+        resMap.put("pageDate", resultConvert(pageDate));
+        resMap.put("page", page);
+        resMap.put("rows", rows);
+        return resMap;
+    }
+
+    private Object resultConvert(List<Map<String, Object>> pageDate) {
+        HashMap<String, ConvertType> convertMap = new HashMap<>();
+        List<String> hasCheckColumnList = new ArrayList<>();
+        for (Map<String, Object> row : pageDate) {
+            getConvertColumn(pageDate.get(0), hasCheckColumnList, convertMap);
+            if (convertMap.keySet().size() > 0) {
+                for (String columnKey : convertMap.keySet()) {
+                    Object columnDate = row.get(columnKey);
+                    if (columnDate != null) {
+                        switch (convertMap.get(columnKey)) {
+                            case BYTE_TO_BASE64:
+                                row.put(columnKey, byteToBase64(columnDate));
+                                break;
+                            case TIMESTAMP_TO_STRING:
+                                row.put(columnKey, timestampToString(columnDate));
+                                break;
+                            case PGOBJECT_TO_STRING:
+                                row.put(columnKey, pgObjectToString(columnDate));
+                            default:
+                                break;
+                        }
+                    } else {
+                        row.put(columnKey, "");
+                    }
+                }
+            }
+        }
+        return pageDate;
+    }
+
+    /**
+     * 数据转换 pgObjectToString
+     *
+     * @param columnDate
+     * @return java.lang.Object
+     * @author CYH
+     * @date 2020/5/6 0006 17:24
+     **/
+    private Object pgObjectToString(Object columnDate) {
+        System.out.printf(columnDate.toString());
+        return ((PGobject) columnDate).getValue();
+    }
+
+    /**
+     * 数据转换 timestampToString
+     *
+     * @param columnDate
+     * @return void
+     * @author CYH
+     * @date 2020/5/6 0006 17:03
+     **/
+    private Object timestampToString(Object columnDate) {
+        try {
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(columnDate);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    /**
+     * 数据转换 byteToBase64
+     *
+     * @param columnDate
+     * @return void
+     * @author CYH
+     * @date 2020/5/6 0006 16:15
+     **/
+    private Object byteToBase64(Object columnDate) {
+        byte[] bytes = toByteArray(columnDate);
+        return byte2Base64String(bytes);
+    }
+
+    /**
+     * 数据转换  byte2Base64String
+     *
+     * @param bytes
+     * @return java.lang.Object
+     * @author CYH
+     * @date 2020/5/6 0006 17:05
+     **/
+    private String byte2Base64String(byte[] bytes) {
+        return new BASE64Encoder().encode(bytes);
+    }
+
+    /**
+     * 获取一行中需要转换的 列 与其转换方式
+     *
+     * @author CYH
+     * @date 2020/5/6 0006 16:10
+     **/
+    private void getConvertColumn(Map<String, Object> row, List<String> hasCheckColumnList, HashMap<String, ConvertType> converMap) {
+        for (String key : row.keySet()) {
+            if (row.get(key) != null && !hasCheckColumnList.contains(key)) {
+                String name = row.get(key).getClass().getName();
+                if ("java.sql.Timestamp".equals(name)) {
+                    converMap.put(key, ConvertType.TIMESTAMP_TO_STRING);
+                    //oracle byte[]
+                } else if ("[B".equals(name)) {
+                    converMap.put(key, ConvertType.BYTE_TO_BASE64);
+                } else if ("org.postgresql.util.PGobject".equals(name)) {
+                    converMap.put(key, ConvertType.PGOBJECT_TO_STRING);
+                }
+                hasCheckColumnList.add(key);
+            }
+        }
+    }
+
+    /**
+     * 对象转数组
+     *
+     * @param obj
+     * @return
+     */
+    public byte[] toByteArray(Object obj) {
+        byte[] bytes = null;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(obj);
+            oos.flush();
+            bytes = bos.toByteArray();
+            oos.close();
+            bos.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return bytes;
+    }
+
+    /**
+     * 有限制的ListMap 查询
+     *
+     * @param serviceSql 查询sql
+     * @param MaxCount   最大数量
+     * @param params     参数
+     * @return java.lang.Object
+     * @author CYH
+     * @date 2020/4/30 0030 10:26
+     **/
+    public Object queryListMapByLimit(String serviceSql, int MaxCount, @Nullable Object... params) throws Exception {
+        PageQueryInfo queryInfo = getPageQueryInfo(1, MaxCount, serviceSql);
+        return resultConvert(queryListMap(queryInfo.getPageSql(), params));
+    }
+
+    /**
+     * 获取数据总条数
+     *
+     * @param serviceSql
+     * @return java.lang.Object
+     * @author CYH
+     * @date 2020/4/28 0028 16:12
+     **/
+    private PageQueryInfo getPageQueryInfo(Integer page, Integer rows, String serviceSql) throws Exception {
+        long skip = (long) ((page - 1) * rows);
+        Matcher matcherSelect = PATTERN_SELECT.matcher(serviceSql);
+        if (!matcherSelect.find()) {
+            throw new Exception("build paging querySql error:canot find select from");
+        } else {
+            String sqlSelectCols = matcherSelect.group(1);
+            String countSql = String.format("select COUNT(1) from (%s) pageTable", serviceSql);
+            Matcher matcherDistinct = PATTERN_DISTINCT.matcher(sqlSelectCols);
+            int lastOrderIndex = serviceSql.toLowerCase().lastIndexOf("order");
+            String sqlOrderBy = null;
+            if (lastOrderIndex > -1) {
+                sqlOrderBy = serviceSql.substring(lastOrderIndex);
+            }
+
+            int firstSelectIndex = serviceSql.toLowerCase().indexOf("select");
+            String formatSQL = "";
+            if (!matcherDistinct.find() && !sqlSelectCols.trim().toLowerCase().equals("*")) {
+                formatSQL = serviceSql.substring(firstSelectIndex + 6);
+            } else {
+                formatSQL = " peta_table.* from (" + serviceSql + ") peta_table ";
+                sqlOrderBy = sqlOrderBy == null ? null : sqlOrderBy.replaceAll("([A-Za-z0-9_]*)\\.", "peta_table.");
+            }
+
+            String pageSql = String.format("SELECT * FROM (SELECT ROW_NUMBER() OVER (%s) peta_rn, %s) peta_paged WHERE peta_rn>" + skip + " AND peta_rn<=" + (skip + (long) rows) + "", sqlOrderBy == null ? "ORDER BY NULL" : sqlOrderBy, formatSQL);
+            PageQueryInfo queryInfo = new PageQueryInfo();
+            queryInfo.setPageSql(pageSql);
+            queryInfo.setCountSql(countSql);
+            return queryInfo;
+        }
     }
 //
 //    /**

@@ -319,6 +319,11 @@ public class StringTool {
         return !isNotEmpty(strs);
     }
 
+    public static boolean isEmpty(Object strs) {
+        return !isNotEmpty(strs);
+    }
+
+
     /**
      * 判断字符串数据是否不为空
      *
