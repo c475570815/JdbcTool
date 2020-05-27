@@ -2,10 +2,10 @@ spring:
   application:
     name: singlewood-provider
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/singlewood?serverTimezone=UTC
-    username: singlewood
-    password: singlewood
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:oracle:thin:@10.1.32.231/orcl
+    username: zw_gwxt
+    password: 1
+    driver-class-name: oracle.jdbc.driver.OracleDriver
 db-config:
   defalut-config-list:
     - {db-type: mysql,driver-class-name: com.mysql.cj.jdbc.Driver, port: 3306, url-template: 'jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}'}

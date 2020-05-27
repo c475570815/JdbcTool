@@ -1,10 +1,11 @@
 package indi.cyh.jdbctool.main;
 
-import indi.cyh.jdbctool.modle.ConvertType;
-import indi.cyh.jdbctool.modle.DbConfig;
-import indi.cyh.jdbctool.modle.DbInfo;
-import indi.cyh.jdbctool.modle.PageQueryInfo;
+import indi.cyh.jdbctool.modle.*;
+import indi.cyh.jdbctool.tool.DataConvertTool;
+import indi.cyh.jdbctool.tool.EntityTool;
 import indi.cyh.jdbctool.tool.StringTool;
+import indi.cyh.jdbctool.toolinterface.FieldColumn;
+import indi.cyh.jdbctool.toolinterface.TableName;
 import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -17,6 +18,7 @@ import sun.misc.BASE64Encoder;
 import javax.sql.DataSource;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -176,11 +178,11 @@ public class JdbcDateBase {
         return (T) template.queryForObject(sql, requiredType, params);
     }
 
-//    public <T implements RowMapper> List<T> queryListObject(String sql, Class<T> requiredType, @Nullable Object... params) {
-//        JdbcTemplate template = getJdbcTemplate();
-//        return template.query(sql, new T(), params);
-//    }
-
+    public <T> List<T> queryList(String sql, Class<T> requiredType, @Nullable Object... params) {
+        Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
+        JdbcTemplate template = getJdbcTemplate();
+        return template.query(sql, new JdbcRowMapper<T>(requiredType), params);
+    }
     public Map queryForMap(String sql, @Nullable Object... params) {
         JdbcTemplate template = getJdbcTemplate();
         return template.queryForMap(sql, params);
@@ -215,6 +217,7 @@ public class JdbcDateBase {
 
     public List<String> queryListString(String sql, @Nullable Object... params) {
         return getJdbcTemplate().query(sql, new RowMapper<String>() {
+            @Override
             public String mapRow(ResultSet resultSet, int i) throws SQLException {
                 return resultSet.getString(1);
             }
@@ -246,20 +249,20 @@ public class JdbcDateBase {
         HashMap<String, ConvertType> convertMap = new HashMap<>();
         List<String> hasCheckColumnList = new ArrayList<>();
         for (Map<String, Object> row : pageDate) {
-            getConvertColumn(pageDate.get(0), hasCheckColumnList, convertMap);
+            DataConvertTool.getConvertColumn(pageDate.get(0), hasCheckColumnList, convertMap);
             if (convertMap.keySet().size() > 0) {
                 for (String columnKey : convertMap.keySet()) {
                     Object columnDate = row.get(columnKey);
                     if (columnDate != null) {
                         switch (convertMap.get(columnKey)) {
                             case BYTE_TO_BASE64:
-                                row.put(columnKey, byteToBase64(columnDate));
+                                row.put(columnKey, DataConvertTool.byteToBase64(columnDate));
                                 break;
                             case TIMESTAMP_TO_STRING:
-                                row.put(columnKey, timestampToString(columnDate));
+                                row.put(columnKey, DataConvertTool.timestampToString(columnDate));
                                 break;
                             case PGOBJECT_TO_STRING:
-                                row.put(columnKey, pgObjectToString(columnDate));
+                                row.put(columnKey, DataConvertTool.pgObjectToString(columnDate));
                             default:
                                 break;
                         }
@@ -272,83 +275,7 @@ public class JdbcDateBase {
         return pageDate;
     }
 
-    /**
-     * 数据转换 pgObjectToString
-     *
-     * @param columnDate
-     * @return java.lang.Object
-     * @author CYH
-     * @date 2020/5/6 0006 17:24
-     **/
-    private Object pgObjectToString(Object columnDate) {
-        System.out.printf(columnDate.toString());
-        return ((PGobject) columnDate).getValue();
-    }
 
-    /**
-     * 数据转换 timestampToString
-     *
-     * @param columnDate
-     * @return void
-     * @author CYH
-     * @date 2020/5/6 0006 17:03
-     **/
-    private Object timestampToString(Object columnDate) {
-        try {
-            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(columnDate);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "";
-        }
-    }
-
-    /**
-     * 数据转换 byteToBase64
-     *
-     * @param columnDate
-     * @return void
-     * @author CYH
-     * @date 2020/5/6 0006 16:15
-     **/
-    private Object byteToBase64(Object columnDate) {
-        byte[] bytes = toByteArray(columnDate);
-        return byte2Base64String(bytes);
-    }
-
-    /**
-     * 数据转换  byte2Base64String
-     *
-     * @param bytes
-     * @return java.lang.Object
-     * @author CYH
-     * @date 2020/5/6 0006 17:05
-     **/
-    private String byte2Base64String(byte[] bytes) {
-        return new BASE64Encoder().encode(bytes);
-    }
-
-    /**
-     * 获取一行中需要转换的 列 与其转换方式
-     *
-     * @author CYH
-     * @date 2020/5/6 0006 16:10
-     **/
-    private void getConvertColumn(Map<String, Object> row, List<String> hasCheckColumnList, HashMap<String, ConvertType> converMap) {
-        for (String key : row.keySet()) {
-            if (row.get(key) != null && !hasCheckColumnList.contains(key)) {
-                String name = row.get(key).getClass().getName();
-                if ("java.sql.Timestamp".equals(name)) {
-                    converMap.put(key, ConvertType.TIMESTAMP_TO_STRING);
-                    //oracle byte[]
-                } else if ("[B".equals(name)) {
-                    converMap.put(key, ConvertType.BYTE_TO_BASE64);
-                } else if ("org.postgresql.util.PGobject".equals(name)) {
-                    converMap.put(key, ConvertType.PGOBJECT_TO_STRING);
-                }
-                hasCheckColumnList.add(key);
-            }
-        }
-    }
 
     /**
      * 对象转数组
