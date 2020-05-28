@@ -2,9 +2,9 @@ spring:
   application:
     name: singlewood-provider
   datasource:
-    url: jdbc:oracle:thin:@10.1.32.231/orcl
-    username: zw_gwxt
-    password: 1
+    url: jdbc:oracle:thin:@*.*.*.*/orcl
+    username: ***
+    password: ***
     driver-class-name: oracle.jdbc.driver.OracleDriver
 db-config:
   defalut-config-list:
