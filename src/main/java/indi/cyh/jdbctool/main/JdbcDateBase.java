@@ -68,18 +68,25 @@ public class JdbcDateBase {
         rxOrderBy = Pattern.compile("\\bORDER\\s+BY\\s+([\\W\\w]*)(ASC|DESC)+", 78);
     }
 
+    /**
+     * 数据库信息实体类
+     */
     public DbInfo dbInfo;
 
     DataSource dataSource;
 
-
+    /***
+     * 配置文件读取的默认配置
+     */
     private DbConfig defaultConfig;
 
     /**
-     * @param entity
+     * 根据参数初始化 数据源
+     *
+     * @param entity 配置文件读取的默认配置
+     * @param config 对象数据库信息
      * @author cyh
-     * @description 根据参数初始化 数据源
-     * @date 2020/4/11 9:18
+     * 2020/5/28 21:54
      **/
     public JdbcDateBase(DbInfo entity, DbConfig config) throws Exception {
         this.defaultConfig = config;
@@ -90,7 +97,7 @@ public class JdbcDateBase {
             if (checkDefaultConfig()) {
                 if (isUserMainDbConfig) {
                     entity = new DbInfo();
-                    //加载主配
+                    //加载默认主配
                     loadingMainDbConfig(entity);
                 } else {
                     //把配置结合参数转换未实体类
@@ -104,7 +111,14 @@ public class JdbcDateBase {
         loadDatebase(entity);
     }
 
-
+    /**
+     * 加载默认主配
+     *
+     * @param entity 配置文件读取的默认配置
+     * @return void
+     * @author cyh
+     * 2020/5/28 21:55
+     **/
     private void loadingMainDbConfig(DbInfo entity) {
         YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
         String configFileName = StringTool.isEmpty(defaultConfig.getConfigFileName()) ? DEFAULT_CONFIG_NAME : defaultConfig.getConfigFileName();
@@ -116,6 +130,14 @@ public class JdbcDateBase {
         entity.setDriverClassName((String) properties.get(MAIN_DB_URL_DRIVER_PATH));
     }
 
+    /**
+     * 生成一个数据源
+     *
+     * @param dbInfo 数据源信息
+     * @return void
+     * @author cyh
+     * 2020/5/28 21:58
+     **/
     private void loadDatebase(DbInfo dbInfo) {
         wl.lock();
         rl.lock();
@@ -129,10 +151,26 @@ public class JdbcDateBase {
         wl.unlock();
     }
 
+    /**
+     * 获取是否加载到配置
+     *
+     * @param
+     * @return boolean
+     * @author cyh
+     * 2020/5/28 21:59
+     **/
     private boolean checkDefaultConfig() {
         return defaultConfig != null;
     }
 
+    /**
+     * 加载给出的数据源信息
+     *
+     * @param entity 配置文件读取的默认配置
+     * @return void
+     * @author cyh
+     * 2020/5/28 21:57
+     **/
     private void setDbInfo(DbInfo entity) throws Exception {
         List<DbInfo> defalutConfigList = defaultConfig.getDefalutConfigList();
         for (DbInfo config : defalutConfigList) {
@@ -149,12 +187,28 @@ public class JdbcDateBase {
         throw new Exception("不支持的数据源类型!");
     }
 
+    /**
+     * 根据当前对象数据源 生成 JdbcTemplate
+     *
+     * @return org.springframework.jdbc.core.JdbcTemplate
+     * @author cyh
+     * 2020/5/28 21:59
+     **/
     public JdbcTemplate getJdbcTemplate() {
         JdbcTemplate template = new JdbcTemplate();
         template.setDataSource(this.dataSource);
         return template;
     }
 
+    /**
+     * 根据db信息生成对应的jdbc链接
+     *
+     * @param config
+     * @param entity
+     * @return java.lang.String
+     * @author cyh
+     * 2020/5/28 21:59
+     **/
     private String getDbConnectUrl(DbInfo config, DbInfo entity) throws Exception {
         String urlTemplate = config.getUrlTemplate();
         urlTemplate = urlTemplate.replace(IP, entity.getIp());
@@ -164,7 +218,38 @@ public class JdbcDateBase {
     }
 
     /**
-     * 查询
+     * 查询单一简单类型结果
+     *
+     * @param s
+     * @param requiredType 结果类型2
+     * @return java.lang.String
+     * @author cyh
+     * 2020/5/28 22:09
+     **/
+    public <T> T querySingleTypeResult(String sql, Class<String> requiredType, @Nullable Object... params) {
+        JdbcTemplate template = getJdbcTemplate();
+        return (T) template.queryForObject(sql, requiredType, params);
+    }
+
+    /**
+     * 查询简单类型集合结果
+     * @param sql
+     * @param params
+     * @return java.util.List<T>
+     * @author cyh
+     * 2020/5/28 22:21
+     **/
+    public <T> List<T>   querySingleTypeList(String sql, @Nullable Object... params) {
+        return getJdbcTemplate().query(sql, new RowMapper<T>() {
+            @Override
+            public T mapRow(ResultSet resultSet, int i) throws SQLException {
+                return (T)resultSet.getObject(1);
+            }
+        });
+    }
+
+    /**
+     * 查询一个实体类
      *
      * @param sql          sql
      * @param requiredType 返回类型
@@ -175,31 +260,36 @@ public class JdbcDateBase {
      **/
     public <T> T queryOneRow(String sql, Class<T> requiredType, @Nullable Object... params) {
         JdbcTemplate template = getJdbcTemplate();
-        return (T) template.queryForObject(sql, requiredType, params);
+        return (T) template.queryForObject(sql, new JdbcRowMapper<T>(requiredType), params);
     }
-
+    /**
+     * 查询实体类集合
+     *
+     * @param sql
+     * @param requiredType
+     * @param params
+     * @return java.util.List<T>
+     * @author cyh
+     * 2020/5/28 22:12
+     **/
     public <T> List<T> queryList(String sql, Class<T> requiredType, @Nullable Object... params) {
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         JdbcTemplate template = getJdbcTemplate();
         return template.query(sql, new JdbcRowMapper<T>(requiredType), params);
     }
+
+    /**
+     * 查询一行 map
+     *
+     * @param sql
+     * @param params
+     * @return java.util.Map
+     * @author cyh
+     * 2020/5/28 22:12
+     **/
     public Map queryForMap(String sql, @Nullable Object... params) {
         JdbcTemplate template = getJdbcTemplate();
         return template.queryForMap(sql, params);
-    }
-
-    /**
-     * 用于执行 DML 语句(INSERT、UPDATE、DELETE)
-     *
-     * @param sql    sql
-     * @param params 参数
-     * @return int  影响行数
-     * @author cyh
-     * 2020/4/11 18:05
-     **/
-    public int executeDMLSql(String sql, @Nullable Object... params) {
-        JdbcTemplate template = getJdbcTemplate();
-        return template.update(sql, params);
     }
 
     /**
@@ -215,103 +305,26 @@ public class JdbcDateBase {
         return template.queryForList(sql, params);
     }
 
-    public List<String> queryListString(String sql, @Nullable Object... params) {
-        return getJdbcTemplate().query(sql, new RowMapper<String>() {
-            @Override
-            public String mapRow(ResultSet resultSet, int i) throws SQLException {
-                return resultSet.getString(1);
-            }
-        });
-    }
-
     /**
      * 查询分页数据
      *
-     * @param serviceSql 原始sql
-     * @param page       页数
-     * @param rows       每页行数
-     * @return java.lang.Object
+     * @param serviceSql     原始sql
+     * @param page           页数
+     * @param rows           每页行数
+     * @param isResultString 是否把结果都转换为String
+     * @return Map<String, Object>
      * @author CYH
      * @date 2020/4/28 0028 16:03
      **/
-    public Object queryPageDate(String serviceSql, Integer page, Integer rows, @Nullable Object... params) throws Exception {
+    public  Map<String, Object> queryPageDate(String serviceSql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
         Map<String, Object> resMap = new HashMap<>();
         PageQueryInfo queryInfo = getPageQueryInfo(page, rows, serviceSql);
         resMap.put("total", queryOneRow(queryInfo.getCountSql(), int.class, params));
         List<Map<String, Object>> pageDate = queryListMap(queryInfo.getPageSql(), params);
-        resMap.put("pageDate", resultConvert(pageDate));
+        resMap.put("pageDate", isResultString ? resultConvert(pageDate) : pageDate);
         resMap.put("page", page);
         resMap.put("rows", rows);
         return resMap;
-    }
-
-    private Object resultConvert(List<Map<String, Object>> pageDate) {
-        HashMap<String, ConvertType> convertMap = new HashMap<>();
-        List<String> hasCheckColumnList = new ArrayList<>();
-        for (Map<String, Object> row : pageDate) {
-            DataConvertTool.getConvertColumn(pageDate.get(0), hasCheckColumnList, convertMap);
-            if (convertMap.keySet().size() > 0) {
-                for (String columnKey : convertMap.keySet()) {
-                    Object columnDate = row.get(columnKey);
-                    if (columnDate != null) {
-                        switch (convertMap.get(columnKey)) {
-                            case BYTE_TO_BASE64:
-                                row.put(columnKey, DataConvertTool.byteToBase64(columnDate));
-                                break;
-                            case TIMESTAMP_TO_STRING:
-                                row.put(columnKey, DataConvertTool.timestampToString(columnDate));
-                                break;
-                            case PGOBJECT_TO_STRING:
-                                row.put(columnKey, DataConvertTool.pgObjectToString(columnDate));
-                            default:
-                                break;
-                        }
-                    } else {
-                        row.put(columnKey, "");
-                    }
-                }
-            }
-        }
-        return pageDate;
-    }
-
-
-
-    /**
-     * 对象转数组
-     *
-     * @param obj
-     * @return
-     */
-    public byte[] toByteArray(Object obj) {
-        byte[] bytes = null;
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try {
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(obj);
-            oos.flush();
-            bytes = bos.toByteArray();
-            oos.close();
-            bos.close();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return bytes;
-    }
-
-    /**
-     * 有限制的ListMap 查询
-     *
-     * @param serviceSql 查询sql
-     * @param MaxCount   最大数量
-     * @param params     参数
-     * @return java.lang.Object
-     * @author CYH
-     * @date 2020/4/30 0030 10:26
-     **/
-    public Object queryListMapByLimit(String serviceSql, int MaxCount, @Nullable Object... params) throws Exception {
-        PageQueryInfo queryInfo = getPageQueryInfo(1, MaxCount, serviceSql);
-        return resultConvert(queryListMap(queryInfo.getPageSql(), params));
     }
 
     /**
@@ -353,50 +366,58 @@ public class JdbcDateBase {
             return queryInfo;
         }
     }
-//
-//    /**
-//     * 查询获取list<T>
-//     *
-//     * @param sql          sql
-//     * @param requiredType 返回类型
-//     * @param params       参数
-//     * @return java.util.List<T>
-//     * @author cyh
-//     * 2020/4/11 18:13
-//     **/
-//    public <T> List<T> queryForList(String sql, Class<T> requiredType, Object... params) {
-//        JdbcTemplate template = getJdbcTemplate();
-//        List<T> result = new ArrayList<T>();
-//        template.query(sql, params, rs -> {
-//            try {
-//                // 字段名称
-//                List<String> columnNames = new ArrayList<String>();
-//                //列的类型和属性信息的对象
-//                ResultSetMetaData meta = rs.getMetaData();
-//                int num = meta.getColumnCount();
-//                for (int i = 0; i < num; i++) {
-//                    columnNames.add(meta.getColumnLabel(i + 1));
-//                }
-//                // 设置值
-//                do {
-//                    T obj = requiredType.getConstructor().newInstance();
-//                    for (int i = 0; i < num; i++) {
-//                        // 获取值
-//                        Object value = rs.getObject(i + 1);
-//                        // table.column形式的字段去掉前缀table.
-//                        String columnName = resolveColumn(columnNames.get(i));
-//                        // 下划线转驼峰
-//                        String property = CamelCaseUtils.toCamelCase(columnName);
-//                        // 复制值到属性，这是spring的工具类
-//                        BeanUtils.copyProperty(obj, property, value);
-//                    }
-//                    result.add(obj);
-//                } while (rs.next());
-//            } catch (Exception e) {
-//                throw new QueryException(e);
-//            }
-//        });
-//
-//
-//    }
+
+    /**
+     * 查询listmap时 转换一些特殊类型为String
+     *
+     * @param pageDate
+     * @return java.lang.Object
+     * @author cyh
+     * 2020/5/28 22:15
+     **/
+    private Object resultConvert(List<Map<String, Object>> pageDate) {
+        HashMap<String, ConvertType> convertMap = new HashMap<>();
+        List<String> hasCheckColumnList = new ArrayList<>();
+        for (Map<String, Object> row : pageDate) {
+            DataConvertTool.getConvertColumn(pageDate.get(0), hasCheckColumnList, convertMap);
+            if (convertMap.keySet().size() > 0) {
+                for (String columnKey : convertMap.keySet()) {
+                    Object columnDate = row.get(columnKey);
+                    if (columnDate != null) {
+                        switch (convertMap.get(columnKey)) {
+                            case BYTE_TO_BASE64:
+                                row.put(columnKey, DataConvertTool.byteToBase64(columnDate));
+                                break;
+                            case TIMESTAMP_TO_STRING:
+                                row.put(columnKey, DataConvertTool.timestampToString(columnDate));
+                                break;
+                            case PGOBJECT_TO_STRING:
+                                row.put(columnKey, DataConvertTool.pgObjectToString(columnDate));
+                            default:
+                                break;
+                        }
+                    } else {
+                        row.put(columnKey, "");
+                    }
+                }
+            }
+        }
+        return pageDate;
+    }
+
+    /**
+     * 用于执行 DML 语句(INSERT、UPDATE、DELETE)
+     *
+     * @param sql    sql
+     * @param params 参数
+     * @return int  影响行数
+     * @author cyh
+     * 2020/4/11 18:05
+     **/
+    public int executeDMLSql(String sql, @Nullable Object... params) {
+        JdbcTemplate template = getJdbcTemplate();
+        return template.update(sql, params);
+    }
+
+
 }

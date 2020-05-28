@@ -26,9 +26,9 @@ public class DataConvertTool {
      * @author CYH
      * @date 2020/5/6 0006 16:15
      **/
-    public static Object byteToBase64(Object columnDate) {
+    public static String byteToBase64(Object columnDate) {
         byte[] bytes = toByteArray(columnDate);
-        return byte2Base64String(bytes);
+        return byte2Base64String(bytes).toString();
     }
 
     /**
@@ -39,7 +39,7 @@ public class DataConvertTool {
      * @author CYH
      * @date 2020/5/6 0006 17:24
      **/
-    public static Object pgObjectToString(Object columnDate) {
+    public static String pgObjectToString(Object columnDate) {
         System.out.printf(columnDate.toString());
         return ((PGobject) columnDate).getValue();
     }
@@ -53,9 +53,9 @@ public class DataConvertTool {
      * @author CYH
      * @date 2020/5/6 0006 17:03
      **/
-    public static Object timestampToString(Object columnDate) {
+    public static String timestampToString(Object columnDate) {
         try {
-            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(columnDate);
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(columnDate).toString();
         } catch (Exception e) {
             e.printStackTrace();
             return "";
@@ -106,13 +106,21 @@ public class DataConvertTool {
         for (String key : row.keySet()) {
             if (row.get(key) != null && !hasCheckColumnList.contains(key)) {
                 String name = row.get(key).getClass().getName();
-                if ("java.sql.Timestamp".equals(name)) {
-                    converMap.put(key, ConvertType.TIMESTAMP_TO_STRING);
-                    //oracle byte[]
-                } else if ("[B".equals(name)) {
-                    converMap.put(key, ConvertType.BYTE_TO_BASE64);
-                } else if ("org.postgresql.util.PGobject".equals(name)) {
-                    converMap.put(key, ConvertType.PGOBJECT_TO_STRING);
+                switch (name) {
+                    case "java.sql.Timestamp":
+                        converMap.put(key, ConvertType.TIMESTAMP_TO_STRING);
+                        break;
+                    case "org.postgresql.util.PGobject":
+                        converMap.put(key, ConvertType.PGOBJECT_TO_STRING);
+                        break;
+                    case "[B":
+                        converMap.put(key, ConvertType.BYTE_TO_BASE64);
+                        break;
+                    case "java.sql.Date":
+                        converMap.put(key, ConvertType.TIMESTAMP_TO_STRING);
+                        break;
+                    default:
+                        break;
                 }
                 hasCheckColumnList.add(key);
             }
@@ -120,15 +128,37 @@ public class DataConvertTool {
     }
 
     public static <T> Object convertObject(Class<T> targetType, Object res) {
-        if (res==null) {
+        if (res == null) {
             return null;
         }
         String sourceTypeName = res.getClass().getName();
         String targetTypename = targetType.getName();
-        if ("java.lang.String".equals(targetTypename)) {
-            return res.toString();
+        switch (sourceTypeName) {
+            case "java.lang.String":
+                return convertToString(sourceTypeName, res);
+            default:
+                //System.out.println("未处理目标类型:" + targetTypename);
+                return res;
         }
-        System.out.println(targetTypename);
+
+    }
+
+    private static String convertToString(String sourceTypeName, Object res) {
+        switch (sourceTypeName) {
+            case "java.lang.String":
+                return res.toString();
+            case "java.sql.Timestamp":
+                return timestampToString(res);
+            case "org.postgresql.util.PGobject":
+                return pgObjectToString(res);
+            case "[B":
+                return byteToBase64(res);
+            case "java.sql.Date":
+                return timestampToString(res);
+            default:
+                System.out.println("String转换未处理源类型:" + sourceTypeName);
+        }
         return res.toString();
     }
+
 }
