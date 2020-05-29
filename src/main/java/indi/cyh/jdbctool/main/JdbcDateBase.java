@@ -494,5 +494,46 @@ public class JdbcDateBase {
         executeDMLSql(sql);
     }
 
+    /**
+     * 根据一个主键 查询一个实体类
+     *
+     * @param requiredType
+     * @param id
+     * @return T
+     * @author CYH
+     * @date 2020/5/29 0029 17:28
+     **/
+    public <T> T findRowById(Class<T> requiredType, Object id) {
+        String primaryField = EntityTool.getEntityPrimaryField(requiredType);
+        String tableName = EntityTool.getTabelName(requiredType);
+        StringBuilder dfindRowByIdSqlBuilder = new StringBuilder("select * FROM");
+        dfindRowByIdSqlBuilder.append("  \"" + tableName + "\"  where  ");
+        dfindRowByIdSqlBuilder.append("  \"" + primaryField + "\"").append("=?");
+        String sql = dfindRowByIdSqlBuilder.toString();
+        return queryOneRow(sql, requiredType, id);
+    }
+
+    /**
+     * 根据主键集合 查询实体类集合
+     * @param requiredType
+     * @param ids
+     * @return java.util.List<T>
+     * @author CYH
+     * @date 2020/5/29 0029 17:38
+     **/
+    public <T> List<T> findRowsByIds(Class<T> requiredType, List<Object> ids) {
+        List<String> isList = new ArrayList<>();
+        for (Object id : ids) {
+            isList.add(id.toString());
+        }
+        String primaryField = EntityTool.getEntityPrimaryField(requiredType);
+        String tableName = EntityTool.getTabelName(requiredType);
+        StringBuilder dfindRowByIdSqlBuilder = new StringBuilder("select * FROM");
+        dfindRowByIdSqlBuilder.append("  \"" + tableName + "\"  where  ");
+        dfindRowByIdSqlBuilder.append("  \"" + primaryField + "\"").append(" in  (" + StringTool.getSqlValueStr(isList) + ")");
+        String sql = dfindRowByIdSqlBuilder.toString();
+        return queryList(sql, requiredType);
+    }
+
 
 }
