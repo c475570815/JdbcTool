@@ -133,11 +133,11 @@ public class DataConvertTool {
         }
         String sourceTypeName = res.getClass().getName();
         String targetTypename = targetType.getName();
-        switch (sourceTypeName) {
+        switch (targetTypename) {
             case "java.lang.String":
                 return convertToString(sourceTypeName, res);
             default:
-                //System.out.println("未处理目标类型:" + targetTypename);
+                System.out.println("未处理目标类型:" + targetTypename);
                 return res;
         }
 
@@ -155,6 +155,8 @@ public class DataConvertTool {
                 return byteToBase64(res);
             case "java.sql.Date":
                 return timestampToString(res);
+            case "java.math.BigDecimal":
+                return res.toString();
             default:
                 System.out.println("String转换未处理源类型:" + sourceTypeName);
         }
