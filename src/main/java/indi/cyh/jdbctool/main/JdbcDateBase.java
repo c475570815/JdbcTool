@@ -1,27 +1,21 @@
 package indi.cyh.jdbctool.main;
 
+import com.sun.deploy.util.StringUtils;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
 import indi.cyh.jdbctool.tool.StringTool;
-import indi.cyh.jdbctool.toolinterface.FieldColumn;
-import indi.cyh.jdbctool.toolinterface.TableName;
-import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.lang.Nullable;
-import sun.misc.BASE64Encoder;
 
 import javax.sql.DataSource;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -220,30 +214,32 @@ public class JdbcDateBase {
     /**
      * 查询单一简单类型结果
      *
-     * @param s
-     * @param requiredType 结果类型2
-     * @return java.lang.String
-     * @author cyh
-     * 2020/5/28 22:09
+     * @param sql
+     * @param requiredType
+     * @param params
+     * @return T
+     * @author CYH
+     * @date 2020/5/29 0029 16:44
      **/
-    public <T> T querySingleTypeResult(String sql, Class<String> requiredType, @Nullable Object... params) {
+    public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
         JdbcTemplate template = getJdbcTemplate();
         return (T) template.queryForObject(sql, requiredType, params);
     }
 
     /**
      * 查询简单类型集合结果
+     *
      * @param sql
      * @param params
      * @return java.util.List<T>
      * @author cyh
      * 2020/5/28 22:21
      **/
-    public <T> List<T>   querySingleTypeList(String sql, @Nullable Object... params) {
+    public <T> List<T> querySingleTypeList(String sql, @Nullable Object... params) {
         return getJdbcTemplate().query(sql, new RowMapper<T>() {
             @Override
             public T mapRow(ResultSet resultSet, int i) throws SQLException {
-                return (T)resultSet.getObject(1);
+                return (T) resultSet.getObject(1);
             }
         });
     }
@@ -262,6 +258,7 @@ public class JdbcDateBase {
         JdbcTemplate template = getJdbcTemplate();
         return (T) template.queryForObject(sql, new JdbcRowMapper<T>(requiredType), params);
     }
+
     /**
      * 查询实体类集合
      *
@@ -316,7 +313,7 @@ public class JdbcDateBase {
      * @author CYH
      * @date 2020/4/28 0028 16:03
      **/
-    public  Map<String, Object> queryPageDate(String serviceSql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
+    public Map<String, Object> queryPageDate(String serviceSql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
         Map<String, Object> resMap = new HashMap<>();
         PageQueryInfo queryInfo = getPageQueryInfo(page, rows, serviceSql);
         resMap.put("total", queryOneRow(queryInfo.getCountSql(), int.class, params));
@@ -352,7 +349,7 @@ public class JdbcDateBase {
 
             int firstSelectIndex = serviceSql.toLowerCase().indexOf("select");
             String formatSQL = "";
-            if (!matcherDistinct.find() && !sqlSelectCols.trim().toLowerCase().equals("*")) {
+            if (!matcherDistinct.find() && !"*".equals(sqlSelectCols.trim().toLowerCase())) {
                 formatSQL = serviceSql.substring(firstSelectIndex + 6);
             } else {
                 formatSQL = " peta_table.* from (" + serviceSql + ") peta_table ";
@@ -417,6 +414,84 @@ public class JdbcDateBase {
     public int executeDMLSql(String sql, @Nullable Object... params) {
         JdbcTemplate template = getJdbcTemplate();
         return template.update(sql, params);
+    }
+
+    /**
+     * 插入一个实体类
+     *
+     * @param t
+     * @return int  主键值
+     * @author CYH
+     * @date 2020/5/29 0029 15:44
+     **/
+    public <T> void insert(Class<T> requiredType, T t) throws NoSuchFieldException, IllegalAccessException {
+        Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
+        StringBuilder insertSqlBuilder = new StringBuilder("INSERT INTO");
+        insertSqlBuilder.append("  \"" + EntityTool.getTabelName(requiredType) + "\"");
+        insertSqlBuilder.append("(");
+        List<String> columnNameList = new ArrayList<>();
+        List<String> placeholderList = new ArrayList<>();
+        List<Object> valueList = new ArrayList<>();
+        for (String column : fieldColumnMap.keySet()) {
+            Field field = requiredType.getDeclaredField(column);
+            field.setAccessible(true);
+            Object columnValue;
+            if ((columnValue = field.get(t)) != null) {
+                columnNameList.add(fieldColumnMap.get(column));
+                valueList.add(columnValue);
+                placeholderList.add("?");
+            }
+        }
+        insertSqlBuilder.append(StringTool.getSqlColumnStr(columnNameList));
+        insertSqlBuilder.append(")");
+        insertSqlBuilder.append(" VALUES (");
+        insertSqlBuilder.append(StringUtils.join(placeholderList, ","));
+        insertSqlBuilder.append(")");
+        String sql = insertSqlBuilder.toString();
+        //System.out.println(sql);
+        executeDMLSql(sql, valueList.toArray());
+    }
+
+    /**
+     * 根据id 删除
+     *
+     * @param requiredType
+     * @param id
+     * @return void
+     * @author CYH
+     * @date 2020/5/29 0029 17:01
+     **/
+    public <T> void delectbyId(Class<T> requiredType, Object id) {
+        String primaryField = EntityTool.getEntityPrimaryField(requiredType);
+        String tableName = EntityTool.getTabelName(requiredType);
+        StringBuilder delectSqlBuilder = new StringBuilder("DELETE FROM");
+        delectSqlBuilder.append("  \"" + tableName + "\"  where  ");
+        delectSqlBuilder.append(primaryField).append("=?");
+        String sql = delectSqlBuilder.toString();
+        executeDMLSql(sql, id);
+    }
+
+    /**
+     * 根据id集合  删除
+     *
+     * @param requiredType
+     * @param ids
+     * @return void
+     * @author CYH
+     * @date 2020/5/29 0029 17:08
+     **/
+    public <T> void delectbyIds(Class<T> requiredType, List<Object> ids) {
+        List<String> isList = new ArrayList<>();
+        for (Object id : ids) {
+            isList.add(id.toString());
+        }
+        String primaryField = EntityTool.getEntityPrimaryField(requiredType);
+        String tableName = EntityTool.getTabelName(requiredType);
+        StringBuilder delectSqlBuilder = new StringBuilder("DELETE FROM");
+        delectSqlBuilder.append("  \"" + tableName + "\"  where  ");
+        delectSqlBuilder.append("  \"" + primaryField + "\"").append(" in (" + StringTool.getSqlValueStr(isList) + ")");
+        String sql = delectSqlBuilder.toString();
+        executeDMLSql(sql);
     }
 
 
