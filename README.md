@@ -18,7 +18,7 @@
    1.  在配置文件中配置不同类型的数据库通过jdbc连接时的相关参数(read-config  为 true)
    2.  直接代码注入数据库连接串和使用的数据库驱动(read-config  为 false)
    3.  在实例化JdbcDateBase时 传入DbInfo参数为空则以配置文件中主数据库配置(spring.datasource)参数来生成数据源
-- 这里是列表文本主数据库配置示例(*****使用这个依赖包配置文件中必须有一个主数据库配置)
+- 主数据库配置示例(*****使用这个依赖包配置文件中必须有一个主数据库配置)
 
 ```
 spring:
@@ -31,7 +31,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 ```
 
-- 这里是列表文本其他类型数据库配置(config-file-name参数用于寻找主配文件)
+- 其他类型数据库配置(config-file-name参数用于寻找主配文件)
 
 ```
 db-config:
@@ -43,7 +43,7 @@ db-config:
   config-file-name: application.yml
 ```
 
-- 这里是列表文本作为jar包被其他项目依赖时在classpath下META-INF/spring.factories 加入以下内容
+- 作为jar包被其他项目依赖时在classpath下META-INF/spring.factories 加入以下内容
 
 ```
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
