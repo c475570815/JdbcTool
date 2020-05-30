@@ -1,6 +1,7 @@
 package indi.cyh.jdbctool.main;
 
 import com.sun.deploy.util.StringUtils;
+import indi.cyh.jdbctool.entity.BsDiary;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
@@ -316,7 +317,7 @@ public class JdbcDateBase {
     public Map<String, Object> queryPageDate(String serviceSql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
         Map<String, Object> resMap = new HashMap<>();
         PageQueryInfo queryInfo = getPageQueryInfo(page, rows, serviceSql);
-        resMap.put("total", queryOneRow(queryInfo.getCountSql(), int.class, params));
+        resMap.put("total", querySingleTypeResult(queryInfo.getCountSql(), int.class, params));
         List<Map<String, Object>> pageDate = queryListMap(queryInfo.getPageSql(), params);
         resMap.put("pageDate", isResultString ? resultConvert(pageDate) : pageDate);
         resMap.put("page", page);
@@ -426,8 +427,8 @@ public class JdbcDateBase {
      **/
     public <T> void insert(Class<T> requiredType, T t) throws NoSuchFieldException, IllegalAccessException {
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
-        StringBuilder insertSqlBuilder = new StringBuilder("INSERT INTO");
-        insertSqlBuilder.append("  \"" + EntityTool.getTabelName(requiredType) + "\"");
+        StringBuilder insertSqlBuilder = new StringBuilder("INSERT INTO ");
+        insertSqlBuilder.append( EntityTool.getTabelName(requiredType) );
         insertSqlBuilder.append("(");
         List<String> columnNameList = new ArrayList<>();
         List<String> placeholderList = new ArrayList<>();
@@ -442,7 +443,7 @@ public class JdbcDateBase {
                 placeholderList.add("?");
             }
         }
-        insertSqlBuilder.append(StringTool.getSqlColumnStr(columnNameList));
+        insertSqlBuilder.append(StringUtils.join(columnNameList, ","));
         insertSqlBuilder.append(")");
         insertSqlBuilder.append(" VALUES (");
         insertSqlBuilder.append(StringUtils.join(placeholderList, ","));
@@ -464,8 +465,8 @@ public class JdbcDateBase {
     public <T> void delectbyId(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
-        StringBuilder delectSqlBuilder = new StringBuilder("DELETE FROM");
-        delectSqlBuilder.append("  \"" + tableName + "\"  where  ");
+        StringBuilder delectSqlBuilder = new StringBuilder("DELETE FROM ");
+        delectSqlBuilder.append( tableName + "  where  ");
         delectSqlBuilder.append(primaryField).append("=?");
         String sql = delectSqlBuilder.toString();
         executeDMLSql(sql, id);
@@ -487,9 +488,9 @@ public class JdbcDateBase {
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
-        StringBuilder delectSqlBuilder = new StringBuilder("DELETE FROM");
-        delectSqlBuilder.append("  \"" + tableName + "\"  where  ");
-        delectSqlBuilder.append("  \"" + primaryField + "\"").append(" in (" + StringTool.getSqlValueStr(isList) + ")");
+        StringBuilder delectSqlBuilder = new StringBuilder("DELETE FROM ");
+        delectSqlBuilder.append( tableName + "  where  ");
+        delectSqlBuilder.append( primaryField ).append(" in (" + StringTool.getSqlValueStr(isList) + ")");
         String sql = delectSqlBuilder.toString();
         executeDMLSql(sql);
     }
@@ -506,15 +507,16 @@ public class JdbcDateBase {
     public <T> T findRowById(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
-        StringBuilder dfindRowByIdSqlBuilder = new StringBuilder("select * FROM");
-        dfindRowByIdSqlBuilder.append("  \"" + tableName + "\"  where  ");
-        dfindRowByIdSqlBuilder.append("  \"" + primaryField + "\"").append("=?");
+        StringBuilder dfindRowByIdSqlBuilder = new StringBuilder("select * FROM ");
+        dfindRowByIdSqlBuilder.append( tableName + "  where  ");
+        dfindRowByIdSqlBuilder.append( primaryField ).append("=?");
         String sql = dfindRowByIdSqlBuilder.toString();
         return queryOneRow(sql, requiredType, id);
     }
 
     /**
      * 根据主键集合 查询实体类集合
+     *
      * @param requiredType
      * @param ids
      * @return java.util.List<T>
@@ -528,12 +530,46 @@ public class JdbcDateBase {
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
-        StringBuilder dfindRowByIdSqlBuilder = new StringBuilder("select * FROM");
-        dfindRowByIdSqlBuilder.append("  \"" + tableName + "\"  where  ");
-        dfindRowByIdSqlBuilder.append("  \"" + primaryField + "\"").append(" in  (" + StringTool.getSqlValueStr(isList) + ")");
+        StringBuilder dfindRowByIdSqlBuilder = new StringBuilder("select * FROM ");
+        dfindRowByIdSqlBuilder.append( tableName + "  where  ");
+        dfindRowByIdSqlBuilder.append( primaryField ).append(" in  (" + StringTool.getSqlValueStr(isList) + ")");
         String sql = dfindRowByIdSqlBuilder.toString();
         return queryList(sql, requiredType);
     }
 
-
+    /**
+     * 根据主键更新
+     *
+     * @param requiredType
+     * @param diary
+     * @return q
+     * @author cyh
+     * 2020/5/30 11:03
+     **/
+    public void updateById(Class<BsDiary> requiredType, BsDiary diary) throws NoSuchFieldException, IllegalAccessException {
+        String primaryField = EntityTool.getEntityPrimaryField(requiredType);
+        String tableName = EntityTool.getTabelName(requiredType);
+        Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
+        Object primaryFieldValue = null;
+        List<Object> valueList = new ArrayList<>();
+        StringBuilder updateByIdSqlBuilder = new StringBuilder("UPDATE ");
+        updateByIdSqlBuilder.append( tableName + "  set  ");
+        for (String column : fieldColumnMap.keySet()) {
+            Field field = requiredType.getDeclaredField(column);
+            field.setAccessible(true);
+            String fieldColumn = fieldColumnMap.get(column);
+            if (!fieldColumn.equals(primaryField)) {
+                updateByIdSqlBuilder.append(fieldColumn).append(" = ").append("?,");
+                valueList.add(field.get(diary));
+            } else {
+                primaryFieldValue = field.get(diary);
+            }
+        }
+        updateByIdSqlBuilder.deleteCharAt(updateByIdSqlBuilder.length() - 1);
+        updateByIdSqlBuilder.append(" where ").append( primaryField + "=").append("?");
+        valueList.add(primaryFieldValue);
+        String sql = updateByIdSqlBuilder.toString();
+        System.out.println(sql);
+        executeDMLSql(sql, valueList.toArray());
+    }
 }

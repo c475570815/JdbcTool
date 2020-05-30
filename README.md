@@ -123,6 +123,12 @@ indi.cyh.jdbctool.modle.DbConfig
 ```
             db.queryPageDate("select  *  from bs_diary",1,10,true);
 ```
+- 根据id更新
+```
+            BsDiary diary=db.findRowById(BsDiary.class,"42");
+            diary.setDHead("update");
+            db.updateById(BsDiary.class,diary);
+```
 ......待更新
 
 
