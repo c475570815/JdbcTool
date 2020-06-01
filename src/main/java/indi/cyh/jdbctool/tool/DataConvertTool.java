@@ -1,8 +1,8 @@
 package indi.cyh.jdbctool.tool;
 
 import indi.cyh.jdbctool.modle.ConvertType;
+import org.postgresql.util.Base64;
 import org.postgresql.util.PGobject;
-import sun.misc.BASE64Encoder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -93,7 +93,7 @@ public class DataConvertTool {
      * @date 2020/5/6 0006 17:05
      **/
     public static String byte2Base64String(byte[] bytes) {
-        return new BASE64Encoder().encode(bytes);
+        return Base64.encodeBytes(bytes);
     }
 
     /**

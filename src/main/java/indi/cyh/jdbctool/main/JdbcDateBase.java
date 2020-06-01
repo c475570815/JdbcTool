@@ -1,11 +1,11 @@
 package indi.cyh.jdbctool.main;
 
-import com.sun.deploy.util.StringUtils;
 import indi.cyh.jdbctool.entity.BsDiary;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
 import indi.cyh.jdbctool.tool.StringTool;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.core.io.ClassPathResource;
@@ -84,6 +84,9 @@ public class JdbcDateBase {
      * 2020/5/28 21:54
      **/
     public JdbcDateBase(DbInfo entity, DbConfig config) throws Exception {
+        if(config==null){
+            throw new Exception("配实体不能为空!");
+        }
         this.defaultConfig = config;
         boolean isUserMainDbConfig = entity == null;
         //使用数据库默认主配或者读取次配置才去读取配置生成数据源  否则直接使用实例中给出的相应参数生成数据源
@@ -119,10 +122,10 @@ public class JdbcDateBase {
         String configFileName = StringTool.isEmpty(defaultConfig.getConfigFileName()) ? DEFAULT_CONFIG_NAME : defaultConfig.getConfigFileName();
         yaml.setResources(new ClassPathResource(configFileName));
         Properties properties = yaml.getObject();
-        entity.setConnectStr((String) properties.get(MAIN_DB_URL_PATH));
-        entity.setLogoinName((String) properties.get(MAIN_DB_URL_USERNAME_PATH));
-        entity.setPwd((String) properties.get(MAIN_DB_URL_PWD_PATH));
-        entity.setDriverClassName((String) properties.get(MAIN_DB_URL_DRIVER_PATH));
+        entity.setConnectStr(String.valueOf(properties.get(MAIN_DB_URL_PATH)));
+        entity.setLogoinName(String.valueOf(properties.get(MAIN_DB_URL_USERNAME_PATH)));
+        entity.setPwd(String.valueOf(properties.get(MAIN_DB_URL_PWD_PATH)));
+        entity.setDriverClassName(String.valueOf(properties.get(MAIN_DB_URL_DRIVER_PATH)));
     }
 
     /**
@@ -428,7 +431,7 @@ public class JdbcDateBase {
     public <T> void insert(Class<T> requiredType, T t) throws NoSuchFieldException, IllegalAccessException {
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         StringBuilder insertSqlBuilder = new StringBuilder("INSERT INTO ");
-        insertSqlBuilder.append( EntityTool.getTabelName(requiredType) );
+        insertSqlBuilder.append(EntityTool.getTabelName(requiredType));
         insertSqlBuilder.append("(");
         List<String> columnNameList = new ArrayList<>();
         List<String> placeholderList = new ArrayList<>();
@@ -466,7 +469,7 @@ public class JdbcDateBase {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
         StringBuilder delectSqlBuilder = new StringBuilder("DELETE FROM ");
-        delectSqlBuilder.append( tableName + "  where  ");
+        delectSqlBuilder.append(tableName + "  where  ");
         delectSqlBuilder.append(primaryField).append("=?");
         String sql = delectSqlBuilder.toString();
         executeDMLSql(sql, id);
@@ -489,8 +492,8 @@ public class JdbcDateBase {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
         StringBuilder delectSqlBuilder = new StringBuilder("DELETE FROM ");
-        delectSqlBuilder.append( tableName + "  where  ");
-        delectSqlBuilder.append( primaryField ).append(" in (" + StringTool.getSqlValueStr(isList) + ")");
+        delectSqlBuilder.append(tableName + "  where  ");
+        delectSqlBuilder.append(primaryField).append(" in (" + StringTool.getSqlValueStr(isList) + ")");
         String sql = delectSqlBuilder.toString();
         executeDMLSql(sql);
     }
@@ -508,8 +511,8 @@ public class JdbcDateBase {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
         StringBuilder dfindRowByIdSqlBuilder = new StringBuilder("select * FROM ");
-        dfindRowByIdSqlBuilder.append( tableName + "  where  ");
-        dfindRowByIdSqlBuilder.append( primaryField ).append("=?");
+        dfindRowByIdSqlBuilder.append(tableName + "  where  ");
+        dfindRowByIdSqlBuilder.append(primaryField).append("=?");
         String sql = dfindRowByIdSqlBuilder.toString();
         return queryOneRow(sql, requiredType, id);
     }
@@ -531,8 +534,8 @@ public class JdbcDateBase {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
         StringBuilder dfindRowByIdSqlBuilder = new StringBuilder("select * FROM ");
-        dfindRowByIdSqlBuilder.append( tableName + "  where  ");
-        dfindRowByIdSqlBuilder.append( primaryField ).append(" in  (" + StringTool.getSqlValueStr(isList) + ")");
+        dfindRowByIdSqlBuilder.append(tableName + "  where  ");
+        dfindRowByIdSqlBuilder.append(primaryField).append(" in  (" + StringTool.getSqlValueStr(isList) + ")");
         String sql = dfindRowByIdSqlBuilder.toString();
         return queryList(sql, requiredType);
     }
@@ -553,7 +556,7 @@ public class JdbcDateBase {
         Object primaryFieldValue = null;
         List<Object> valueList = new ArrayList<>();
         StringBuilder updateByIdSqlBuilder = new StringBuilder("UPDATE ");
-        updateByIdSqlBuilder.append( tableName + "  set  ");
+        updateByIdSqlBuilder.append(tableName + "  set  ");
         for (String column : fieldColumnMap.keySet()) {
             Field field = requiredType.getDeclaredField(column);
             field.setAccessible(true);
@@ -566,7 +569,7 @@ public class JdbcDateBase {
             }
         }
         updateByIdSqlBuilder.deleteCharAt(updateByIdSqlBuilder.length() - 1);
-        updateByIdSqlBuilder.append(" where ").append( primaryField + "=").append("?");
+        updateByIdSqlBuilder.append(" where ").append(primaryField + "=").append("?");
         valueList.add(primaryFieldValue);
         String sql = updateByIdSqlBuilder.toString();
         System.out.println(sql);
