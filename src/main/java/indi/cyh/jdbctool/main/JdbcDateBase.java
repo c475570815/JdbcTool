@@ -1,5 +1,7 @@
 package indi.cyh.jdbctool.main;
 
+import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.pool.DruidPooledConnection;
 import indi.cyh.jdbctool.entity.BsDiary;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
@@ -46,7 +48,6 @@ public class JdbcDateBase {
     private static final Pattern PATTERN_DISTINCT;
     private static final Pattern rxOrderBy;
 
-    private static DataSourceBuilder builder = DataSourceBuilder.create();
 
     private static final ReentrantReadWriteLock rrwl = new ReentrantReadWriteLock();
     private static final ReentrantReadWriteLock.ReadLock rl;
@@ -68,7 +69,7 @@ public class JdbcDateBase {
      */
     public DbInfo dbInfo;
 
-    DataSource dataSource;
+    DruidDataSource dataSource;
 
     /***
      * 配置文件读取的默认配置
@@ -84,7 +85,7 @@ public class JdbcDateBase {
      * 2020/5/28 21:54
      **/
     public JdbcDateBase(DbInfo entity, DbConfig config) throws Exception {
-        if(config==null){
+        if (config == null) {
             throw new Exception("配实体不能为空!");
         }
         this.defaultConfig = config;
@@ -136,15 +137,14 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/5/28 21:58
      **/
-    private void loadDatebase(DbInfo dbInfo) {
+    private void loadDatebase(DbInfo dbInfo) throws SQLException {
         wl.lock();
         rl.lock();
-        builder.driverClassName(dbInfo.getDriverClassName());
-        builder.url(dbInfo.getConnectStr());
-        builder.username(dbInfo.getLogoinName());
-        builder.password(dbInfo.getPwd());
-        this.dbInfo = dbInfo;
-        this.dataSource = builder.build();
+        dataSource = new DruidDataSource();
+        dataSource.setDriverClassName(dbInfo.getDriverClassName());
+        dataSource.setUrl(dbInfo.getConnectStr());
+        dataSource.setUsername(dbInfo.getLogoinName());
+        dataSource.setPassword(dbInfo.getPwd());
         rl.unlock();
         wl.unlock();
     }
