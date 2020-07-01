@@ -1,7 +1,7 @@
 # JdbcTool
 
 #### 介绍
-工具依靠spring-jdbc的多源操作数据库工具
+工具依靠spring-jdbc的多源操作数据库工具结合springboot使用
 
 #### 软件架构
 软件架构说明
@@ -18,7 +18,7 @@
    1.  在配置文件中配置不同类型的数据库通过jdbc连接时的相关参数(read-config  为 true)
    2.  直接代码注入数据库连接串和使用的数据库驱动(read-config  为 false)
    3.  在实例化JdbcDateBase时 传入DbInfo参数为空则以配置文件中主数据库配置(spring.datasource)参数来生成数据源
-- 主数据库配置示例(注意目前使用这个依赖包配置文件中必须有一个主数据库配置)
+- 主数据库配置示例
 
 ```
 spring:
@@ -30,6 +30,15 @@ spring:
     password: singlewood
     driver-class-name: com.mysql.cj.jdbc.Driver
 ```
+若不想配置默认库可以在入口使用注解
+
+```
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class,
+        DataSourceTransactionManagerAutoConfiguration.class,
+        HibernateJpaAutoConfiguration.class})
+```
+
+
 
 - 其他类型数据库配置(config-file-name参数用于寻找主配文件)
 
