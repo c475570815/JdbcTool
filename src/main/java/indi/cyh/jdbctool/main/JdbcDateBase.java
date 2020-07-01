@@ -85,25 +85,24 @@ public class JdbcDateBase {
      * 2020/5/28 21:54
      **/
     public JdbcDateBase(DbInfo entity, DbConfig config) throws Exception {
-        if (config == null) {
-            throw new Exception("配实体不能为空!");
-        }
-        this.defaultConfig = config;
-        boolean isUserMainDbConfig = entity == null;
-        //使用数据库默认主配或者读取次配置才去读取配置生成数据源  否则直接使用实例中给出的相应参数生成数据源
-        if (isUserMainDbConfig || config.isReadConfig()) {
-            //检查是否加载到配置
-            if (checkDefaultConfig()) {
-                if (isUserMainDbConfig) {
-                    entity = new DbInfo();
-                    //加载默认主配
-                    loadingMainDbConfig(entity);
+        if (config != null) {
+            this.defaultConfig = config;
+            boolean isUserMainDbConfig = entity == null;
+            //使用数据库默认主配或者读取次配置才去读取配置生成数据源  否则直接使用实例中给出的相应参数生成数据源
+            if (isUserMainDbConfig || config.isReadConfig()) {
+                //检查是否加载到配置
+                if (checkDefaultConfig()) {
+                    if (isUserMainDbConfig) {
+                        entity = new DbInfo();
+                        //加载默认主配
+                        loadingMainDbConfig(entity);
+                    } else if (StringTool.isNotEmpty(entity.getDbType())) {
+                        //把配置结合参数转换未实体类
+                        setDbInfo(entity);
+                    }
                 } else {
-                    //把配置结合参数转换未实体类
-                    setDbInfo(entity);
+                    throw new Exception("未加载到数据库默认配置,请检查配置!");
                 }
-            } else {
-                throw new Exception("未加载到数据库默认配置,请检查配置!");
             }
         }
         //根据实体生成数据源
