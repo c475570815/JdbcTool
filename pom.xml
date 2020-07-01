@@ -66,9 +66,9 @@
             <version>3.9</version>
         </dependency>
         <dependency>
-            <groupId>asm.com.alibaba</groupId>
+            <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
-            <version>1.1.21</version>
+            <version>1.1.23</version>
         </dependency>
     </dependencies>
 
@@ -144,9 +144,9 @@
                         <configuration>
                             <type>jar</type>
                             <includeTypes>jar</includeTypes>
-                            <outputDirectory>
-                                ${project.build.directory}/lib
-                            </outputDirectory>
+<!--                            <outputDirectory>-->
+<!--                                ${project.build.directory}/lib-->
+<!--                            </outputDirectory>-->
                         </configuration>
                     </execution>
                 </executions>
