@@ -113,21 +113,14 @@ public class JdbcDateBase {
         if (hasConfig) {
             this.defaultConfig = config;
             boolean isUserMainDbConfig = entity == null;
-            //使用数据库默认主配或者读取次配置才去读取配置生成数据源  否则直接使用实例中给出的相应参数生成数据源
-            if (isUserMainDbConfig || config.isReadConfig()) {
-                //检查是否加载到配置
-                if (checkDefaultConfig()) {
-                    if (isUserMainDbConfig) {
-                        entity = new DbInfo();
-                        //加载默认主配
-                        loadingMainDbConfig(entity);
-                    } else if (StringTool.isNotEmpty(entity.getDbType())) {
-                        //把配置结合参数转换未实体类
-                        setDbInfo(entity);
-                    }
-                } else {
-                    throw new Exception("未加载到数据库默认配置,请检查配置!");
-                }
+            //使用数据库默认配置  或者 使用实例中给出的相应参数生成数据源
+            if (isUserMainDbConfig) {
+                entity = new DbInfo();
+                //加载默认主配
+                loadingMainDbConfig(entity);
+            } else if (StringTool.isNotEmpty(entity.getDbType())) {
+                //把配置结合参数转换未实体类
+                setDbInfo(entity);
             }
         }
         //根据实体生成数据源
@@ -171,18 +164,6 @@ public class JdbcDateBase {
         dataSource.setPassword(dbInfo.getPwd());
         rl.unlock();
         wl.unlock();
-    }
-
-    /**
-     * 获取是否加载到配置
-     *
-     * @param
-     * @return boolean
-     * @author cyh
-     * 2020/5/28 21:59
-     **/
-    private boolean checkDefaultConfig() {
-        return defaultConfig != null;
     }
 
     /**

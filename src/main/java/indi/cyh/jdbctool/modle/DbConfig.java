@@ -22,7 +22,6 @@ import java.util.List;
 @ConfigurationProperties(prefix = "db-config")
 public class DbConfig {
     List<DbInfo> defalutConfigList;
-    boolean isReadConfig;
     String configFileName;
     boolean isDebugger = true;
 
@@ -41,14 +40,6 @@ public class DbConfig {
 
     public void setDefalutConfigList(List<DbInfo> defalutConfigList) {
         this.defalutConfigList = defalutConfigList;
-    }
-
-    public boolean isReadConfig() {
-        return isReadConfig;
-    }
-
-    public void setReadConfig(boolean readConfig) {
-        isReadConfig = readConfig;
     }
 
     public String getConfigFileName() {
