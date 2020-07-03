@@ -16,7 +16,9 @@
 #### 使用说明
 目前有三种方式生成数据源
    1.  在配置文件中配置不同类型的jdbcConnection模板,通过DbConfig实体类给出相关参数生成数据源
-        ` @Autowired
+
+```
+@Autowired
     private DbConfig config;
     DbInfo dbInfo = new DbInfo() {{
             setDbType("mysql");
@@ -26,10 +28,13 @@
             setPwd("***");
             setEndParam("singlewood");
         }};
-    JdbcDateBase db = new JdbcDateBase(dbInfo, config);`
+    JdbcDateBase db = new JdbcDateBase(dbInfo, config);
+```
+
    2.  动态注入数据库连接串和使用的数据库驱动生成数据源(DbConfig 参数可为null)
 
-        `  @Autowired
+```
+@Autowired
     private DbConfig config;
     DbInfo dbInfo = new DbInfo() {{
                 setConnectStr("jdbc:mysql://106.52.167.158:3306/singlewood");
@@ -37,12 +42,18 @@
                 setLogoinName("root");
                 setPwd("cyh123321");
             }};
-            JdbcDateBase db = new JdbcDateBase(dbInfo, config);`
+            JdbcDateBase db = new JdbcDateBase(dbInfo, config);
+```
+
 
    3.  在实例化JdbcDateBase时,传入DbInfo为null则以配置文件中主数据库配置(spring.datasource)参数来生成数据源(DbConfig 参数可为null)
-   `    @Autowired
+
+```
+@Autowired
     private DbConfig config;
-    JdbcDateBase db = new JdbcDateBase(null, config);`
+    JdbcDateBase db = new JdbcDateBase(null, config);
+```
+
 - 主数据库配置示例
 
 ```
