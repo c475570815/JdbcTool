@@ -13,3 +13,4 @@ db-config:
     - {db-type: postgres,driver-class-name: org.postgresql.Driver, port: 3306, url-template: 'jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}'}
   read-config: true
   config-file-name: application.yml
+  debugger: false

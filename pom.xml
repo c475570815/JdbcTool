@@ -126,6 +126,7 @@
                         <exclude>**/entity/*</exclude>
                         <!--排除测试使用的主函数-->
                         <exclude>**/JdbcToolApplication.*</exclude>
+                        <exclude>**/*.yml</exclude>
                     </excludes>
                 </configuration>
             </plugin>

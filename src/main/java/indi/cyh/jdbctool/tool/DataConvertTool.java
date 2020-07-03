@@ -137,7 +137,7 @@ public class DataConvertTool {
             case "java.lang.String":
                 return convertToString(sourceTypeName, res);
             default:
-                System.out.println("未处理目标类型:" + targetTypename);
+                //System.out.println("未处理目标类型:" + targetTypename);
                 return res;
         }
 
@@ -158,7 +158,7 @@ public class DataConvertTool {
             case "java.math.BigDecimal":
                 return res.toString();
             default:
-                System.out.println("String转换未处理源类型:" + sourceTypeName);
+               // System.out.println("String转换未处理源类型:" + sourceTypeName);
         }
         return res.toString();
     }

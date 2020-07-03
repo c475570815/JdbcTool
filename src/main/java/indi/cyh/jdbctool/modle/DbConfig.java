@@ -24,6 +24,16 @@ public class DbConfig {
     List<DbInfo> defalutConfigList;
     boolean isReadConfig;
     String configFileName;
+    boolean isDebugger = true;
+
+
+    public boolean isDebugger() {
+        return isDebugger;
+    }
+
+    public void setDebugger(boolean debugger) {
+        isDebugger = debugger;
+    }
 
     public List<DbInfo> getDefalutConfigList() {
         return defalutConfigList;

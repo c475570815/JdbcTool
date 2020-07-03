@@ -75,6 +75,30 @@ public class JdbcDateBase {
      * 配置文件读取的默认配置
      */
     private DbConfig defaultConfig;
+    /**
+     * defaultConfig  是否非空
+     */
+    private boolean hasConfig;
+
+    private void printLog(String sql, @Nullable Object... params) {
+        //默认打开打印  当配置中设置了非调试模式则关闭打印
+        if (!hasConfig || defaultConfig.isDebugger()) {
+            System.out.println("##########################################JDBCTOOL##########################################");
+            System.out.println("conStr:" + dataSource.getRawJdbcUrl());
+            System.out.println("");
+            System.out.println("sql : " + sql);
+            if (params != null && params.length != 0) {
+                System.out.println("");
+                System.out.println(params.length + "  params");
+                System.out.println("");
+                for (int i = 0; i < params.length; i++) {
+                    System.out.println("param-" + (i + 1) + ": " + String.valueOf(params[i]) + "[" + params[i].getClass().getName() + "]");
+                    System.out.println("");
+                }
+            }
+            System.out.println("##########################################JDBCTOOL##########################################");
+        }
+    }
 
     /**
      * 根据参数初始化 数据源
@@ -85,7 +109,8 @@ public class JdbcDateBase {
      * 2020/5/28 21:54
      **/
     public JdbcDateBase(DbInfo entity, DbConfig config) throws Exception {
-        if (config != null) {
+        hasConfig = config != null;
+        if (hasConfig) {
             this.defaultConfig = config;
             boolean isUserMainDbConfig = entity == null;
             //使用数据库默认主配或者读取次配置才去读取配置生成数据源  否则直接使用实例中给出的相应参数生成数据源
@@ -136,7 +161,7 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/5/28 21:58
      **/
-    private void loadDatebase(DbInfo dbInfo) throws SQLException {
+    private void loadDatebase(DbInfo dbInfo) {
         wl.lock();
         rl.lock();
         dataSource = new DruidDataSource();
@@ -206,7 +231,7 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/5/28 21:59
      **/
-    private String getDbConnectUrl(DbInfo config, DbInfo entity) throws Exception {
+    private String getDbConnectUrl(DbInfo config, DbInfo entity) {
         String urlTemplate = config.getUrlTemplate();
         urlTemplate = urlTemplate.replace(IP, entity.getIp());
         urlTemplate = urlTemplate.replace(PORT, String.valueOf(entity.getPort()));
@@ -225,8 +250,10 @@ public class JdbcDateBase {
      * @date 2020/5/29 0029 16:44
      **/
     public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
+        printLog(sql, params);
         JdbcTemplate template = getJdbcTemplate();
         return (T) template.queryForObject(sql, requiredType, params);
+
     }
 
     /**
@@ -238,7 +265,8 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/5/28 22:21
      **/
-    public <T> List<T> querySingleTypeList(String sql, @Nullable Object... params) {
+    public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
+        printLog(sql, params);
         return getJdbcTemplate().query(sql, new RowMapper<T>() {
             @Override
             public T mapRow(ResultSet resultSet, int i) throws SQLException {
@@ -258,6 +286,7 @@ public class JdbcDateBase {
      * 2020/4/11 15:41
      **/
     public <T> T queryOneRow(String sql, Class<T> requiredType, @Nullable Object... params) {
+        printLog(sql, params);
         JdbcTemplate template = getJdbcTemplate();
         return (T) template.queryForObject(sql, new JdbcRowMapper<T>(requiredType), params);
     }
@@ -273,6 +302,7 @@ public class JdbcDateBase {
      * 2020/5/28 22:12
      **/
     public <T> List<T> queryList(String sql, Class<T> requiredType, @Nullable Object... params) {
+        printLog(sql, params);
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         JdbcTemplate template = getJdbcTemplate();
         return template.query(sql, new JdbcRowMapper<T>(requiredType), params);
@@ -288,6 +318,7 @@ public class JdbcDateBase {
      * 2020/5/28 22:12
      **/
     public Map queryForMap(String sql, @Nullable Object... params) {
+        printLog(sql, params);
         JdbcTemplate template = getJdbcTemplate();
         return template.queryForMap(sql, params);
     }
@@ -301,6 +332,7 @@ public class JdbcDateBase {
      * 2020/4/11 18:11
      **/
     public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
+        printLog(sql, params);
         JdbcTemplate template = getJdbcTemplate();
         return template.queryForList(sql, params);
     }
@@ -308,7 +340,7 @@ public class JdbcDateBase {
     /**
      * 查询分页数据
      *
-     * @param serviceSql     原始sql
+     * @param sql            原始sql
      * @param page           页数
      * @param rows           每页行数
      * @param isResultString 是否把结果都转换为String
@@ -316,9 +348,9 @@ public class JdbcDateBase {
      * @author CYH
      * @date 2020/4/28 0028 16:03
      **/
-    public Map<String, Object> queryPageDate(String serviceSql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
+    public Map<String, Object> queryPageDate(String sql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
         Map<String, Object> resMap = new HashMap<>();
-        PageQueryInfo queryInfo = getPageQueryInfo(page, rows, serviceSql);
+        PageQueryInfo queryInfo = getPageQueryInfo(page, rows, sql);
         resMap.put("total", querySingleTypeResult(queryInfo.getCountSql(), int.class, params));
         List<Map<String, Object>> pageDate = queryListMap(queryInfo.getPageSql(), params);
         resMap.put("pageDate", isResultString ? resultConvert(pageDate) : pageDate);
@@ -328,34 +360,34 @@ public class JdbcDateBase {
     }
 
     /**
-     * 获取数据总条数
+     * 制作分页实体
      *
-     * @param serviceSql
+     * @param sql
      * @return java.lang.Object
      * @author CYH
      * @date 2020/4/28 0028 16:12
      **/
-    private PageQueryInfo getPageQueryInfo(Integer page, Integer rows, String serviceSql) throws Exception {
+    private PageQueryInfo getPageQueryInfo(Integer page, Integer rows, String sql) throws Exception {
         long skip = (long) ((page - 1) * rows);
-        Matcher matcherSelect = PATTERN_SELECT.matcher(serviceSql);
+        Matcher matcherSelect = PATTERN_SELECT.matcher(sql);
         if (!matcherSelect.find()) {
             throw new Exception("build paging querySql error:canot find select from");
         } else {
             String sqlSelectCols = matcherSelect.group(1);
-            String countSql = String.format("select COUNT(1) from (%s) pageTable", serviceSql);
+            String countSql = String.format("select COUNT(1) from (%s) pageTable", sql);
             Matcher matcherDistinct = PATTERN_DISTINCT.matcher(sqlSelectCols);
-            int lastOrderIndex = serviceSql.toLowerCase().lastIndexOf("order");
+            int lastOrderIndex = sql.toLowerCase().lastIndexOf("order");
             String sqlOrderBy = null;
             if (lastOrderIndex > -1) {
-                sqlOrderBy = serviceSql.substring(lastOrderIndex);
+                sqlOrderBy = sql.substring(lastOrderIndex);
             }
 
-            int firstSelectIndex = serviceSql.toLowerCase().indexOf("select");
+            int firstSelectIndex = sql.toLowerCase().indexOf("select");
             String formatSQL = "";
             if (!matcherDistinct.find() && !"*".equals(sqlSelectCols.trim().toLowerCase())) {
-                formatSQL = serviceSql.substring(firstSelectIndex + 6);
+                formatSQL = sql.substring(firstSelectIndex + 6);
             } else {
-                formatSQL = " peta_table.* from (" + serviceSql + ") peta_table ";
+                formatSQL = " peta_table.* from (" + sql + ") peta_table ";
                 sqlOrderBy = sqlOrderBy == null ? null : sqlOrderBy.replaceAll("([A-Za-z0-9_]*)\\.", "peta_table.");
             }
 
@@ -415,6 +447,7 @@ public class JdbcDateBase {
      * 2020/4/11 18:05
      **/
     public int executeDMLSql(String sql, @Nullable Object... params) {
+        printLog(sql, params);
         JdbcTemplate template = getJdbcTemplate();
         return template.update(sql, params);
     }
@@ -451,8 +484,9 @@ public class JdbcDateBase {
         insertSqlBuilder.append(StringUtils.join(placeholderList, ","));
         insertSqlBuilder.append(")");
         String sql = insertSqlBuilder.toString();
-        //System.out.println(sql);
-        executeDMLSql(sql, valueList.toArray());
+        Object[] params = valueList.toArray();
+        printLog(sql, params);
+        executeDMLSql(sql, params);
     }
 
     /**
@@ -471,6 +505,7 @@ public class JdbcDateBase {
         delectSqlBuilder.append(tableName + "  where  ");
         delectSqlBuilder.append(primaryField).append("=?");
         String sql = delectSqlBuilder.toString();
+        printLog(sql, id);
         executeDMLSql(sql, id);
     }
 
@@ -494,6 +529,7 @@ public class JdbcDateBase {
         delectSqlBuilder.append(tableName + "  where  ");
         delectSqlBuilder.append(primaryField).append(" in (" + StringTool.getSqlValueStr(isList) + ")");
         String sql = delectSqlBuilder.toString();
+        printLog(sql);
         executeDMLSql(sql);
     }
 
@@ -513,6 +549,7 @@ public class JdbcDateBase {
         dfindRowByIdSqlBuilder.append(tableName + "  where  ");
         dfindRowByIdSqlBuilder.append(primaryField).append("=?");
         String sql = dfindRowByIdSqlBuilder.toString();
+        printLog(sql, id);
         return queryOneRow(sql, requiredType, id);
     }
 
@@ -532,10 +569,11 @@ public class JdbcDateBase {
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
-        StringBuilder dfindRowByIdSqlBuilder = new StringBuilder("select * FROM ");
-        dfindRowByIdSqlBuilder.append(tableName + "  where  ");
-        dfindRowByIdSqlBuilder.append(primaryField).append(" in  (" + StringTool.getSqlValueStr(isList) + ")");
-        String sql = dfindRowByIdSqlBuilder.toString();
+        StringBuilder findRowByIdSqlBuilder = new StringBuilder("select * FROM ");
+        findRowByIdSqlBuilder.append(tableName + "  where  ");
+        findRowByIdSqlBuilder.append(primaryField).append(" in  (" + StringTool.getSqlValueStr(isList) + ")");
+        String sql = findRowByIdSqlBuilder.toString();
+        printLog(sql);
         return queryList(sql, requiredType);
     }
 
@@ -571,7 +609,8 @@ public class JdbcDateBase {
         updateByIdSqlBuilder.append(" where ").append(primaryField + "=").append("?");
         valueList.add(primaryFieldValue);
         String sql = updateByIdSqlBuilder.toString();
-        System.out.println(sql);
+        Object[] params = valueList.toArray();
+        printLog(sql, params);
         executeDMLSql(sql, valueList.toArray());
     }
 }
