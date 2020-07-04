@@ -103,7 +103,7 @@ public class JdbcDateBase {
     /**
      * 事务相关
      */
-    DataSourceTransactionManager transactionManager=new DataSourceTransactionManager();
+    DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
     LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
 
 
@@ -648,8 +648,13 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/7/4 9:42
      **/
-    public void commitTransaction(String transactionId) {
-        transactionManager.commit(transcationMap.get(transactionId));
+    public void commitTransaction(String transactionId) throws Exception {
+        if (transcationMap.containsKey(transactionId)) {
+            transactionManager.commit(transcationMap.get(transactionId));
+            transcationMap.remove(transactionId);
+        } else {
+            throw new Exception("错误的transactionId:" + transactionId);
+        }
     }
 
     /**
@@ -660,7 +665,12 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/7/4 9:42
      **/
-    public void rollbackTransaction(String transactionId) {
-        transactionManager.rollback(transcationMap.get(transactionId));
+    public void rollbackTransaction(String transactionId) throws Exception {
+        if (transcationMap.containsKey(transactionId)) {
+            transactionManager.rollback(transcationMap.get(transactionId));
+            transcationMap.remove(transactionId);
+        } else {
+            throw new Exception("错误的transactionId:" + transactionId);
+        }
     }
 }
