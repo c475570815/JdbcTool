@@ -1,5 +1,6 @@
-package indi.cyh.jdbctool.modle;
+package indi.cyh.jdbctool.config;
 
+import indi.cyh.jdbctool.modle.DbInfo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

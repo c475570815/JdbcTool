@@ -1,7 +1,7 @@
 package indi.cyh.jdbctool.main;
 
 import com.alibaba.druid.pool.DruidDataSource;
-import com.alibaba.druid.pool.DruidPooledConnection;
+import indi.cyh.jdbctool.config.DbConfig;
 import indi.cyh.jdbctool.entity.BsDiary;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
@@ -9,13 +9,14 @@ import indi.cyh.jdbctool.tool.EntityTool;
 import indi.cyh.jdbctool.tool.StringTool;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
-import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.lang.Nullable;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -53,6 +54,8 @@ public class JdbcDateBase {
     private static final ReentrantReadWriteLock.ReadLock rl;
     private static final ReentrantReadWriteLock.WriteLock wl;
 
+    private static final TransactionDefinition definition;
+
     static {
         rl = rrwl.readLock();
         wl = rrwl.writeLock();
@@ -62,6 +65,33 @@ public class JdbcDateBase {
         PATTERN_SELECT = Pattern.compile("select([\\W\\w]*)from", 78);
         PATTERN_DISTINCT = Pattern.compile("\\A\\s+DISTINCT\\s", 78);
         rxOrderBy = Pattern.compile("\\bORDER\\s+BY\\s+([\\W\\w]*)(ASC|DESC)+", 78);
+
+        definition = new TransactionDefinition() {
+            @Override
+            public int getPropagationBehavior() {
+                return TransactionDefinition.PROPAGATION_REQUIRED;
+            }
+
+            @Override
+            public int getIsolationLevel() {
+                return TransactionDefinition.ISOLATION_DEFAULT;
+            }
+
+            @Override
+            public int getTimeout() {
+                return TIMEOUT_DEFAULT;
+            }
+
+            @Override
+            public boolean isReadOnly() {
+                return false;
+            }
+
+            @Override
+            public String getName() {
+                return "JDBC-TOOL";
+            }
+        };
     }
 
     /**
@@ -70,6 +100,12 @@ public class JdbcDateBase {
     public DbInfo dbInfo;
 
     DruidDataSource dataSource;
+    /**
+     * 事务相关
+     */
+    DataSourceTransactionManager transactionManager=new DataSourceTransactionManager();
+    LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
+
 
     /***
      * 配置文件读取的默认配置
@@ -155,15 +191,16 @@ public class JdbcDateBase {
      * 2020/5/28 21:58
      **/
     private void loadDatebase(DbInfo dbInfo) {
-        wl.lock();
-        rl.lock();
+//        wl.lock();
+//        rl.lock();
         dataSource = new DruidDataSource();
         dataSource.setDriverClassName(dbInfo.getDriverClassName());
         dataSource.setUrl(dbInfo.getConnectStr());
         dataSource.setUsername(dbInfo.getLogoinName());
         dataSource.setPassword(dbInfo.getPwd());
-        rl.unlock();
-        wl.unlock();
+        transactionManager.setDataSource(dataSource);
+//        rl.unlock();
+//        wl.unlock();
     }
 
     /**
@@ -284,7 +321,6 @@ public class JdbcDateBase {
      **/
     public <T> List<T> queryList(String sql, Class<T> requiredType, @Nullable Object... params) {
         printLog(sql, params);
-        Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         JdbcTemplate template = getJdbcTemplate();
         return template.query(sql, new JdbcRowMapper<T>(requiredType), params);
     }
@@ -466,7 +502,6 @@ public class JdbcDateBase {
         insertSqlBuilder.append(")");
         String sql = insertSqlBuilder.toString();
         Object[] params = valueList.toArray();
-        printLog(sql, params);
         executeDMLSql(sql, params);
     }
 
@@ -486,7 +521,6 @@ public class JdbcDateBase {
         delectSqlBuilder.append(tableName + "  where  ");
         delectSqlBuilder.append(primaryField).append("=?");
         String sql = delectSqlBuilder.toString();
-        printLog(sql, id);
         executeDMLSql(sql, id);
     }
 
@@ -510,7 +544,6 @@ public class JdbcDateBase {
         delectSqlBuilder.append(tableName + "  where  ");
         delectSqlBuilder.append(primaryField).append(" in (" + StringTool.getSqlValueStr(isList) + ")");
         String sql = delectSqlBuilder.toString();
-        printLog(sql);
         executeDMLSql(sql);
     }
 
@@ -530,7 +563,6 @@ public class JdbcDateBase {
         dfindRowByIdSqlBuilder.append(tableName + "  where  ");
         dfindRowByIdSqlBuilder.append(primaryField).append("=?");
         String sql = dfindRowByIdSqlBuilder.toString();
-        printLog(sql, id);
         return queryOneRow(sql, requiredType, id);
     }
 
@@ -554,7 +586,6 @@ public class JdbcDateBase {
         findRowByIdSqlBuilder.append(tableName + "  where  ");
         findRowByIdSqlBuilder.append(primaryField).append(" in  (" + StringTool.getSqlValueStr(isList) + ")");
         String sql = findRowByIdSqlBuilder.toString();
-        printLog(sql);
         return queryList(sql, requiredType);
     }
 
@@ -591,7 +622,45 @@ public class JdbcDateBase {
         valueList.add(primaryFieldValue);
         String sql = updateByIdSqlBuilder.toString();
         Object[] params = valueList.toArray();
-        printLog(sql, params);
-        executeDMLSql(sql, valueList.toArray());
+        executeDMLSql(sql, params);
+    }
+
+    /**
+     * 开启一个事务
+     *
+     * @param
+     * @return java.lang.String  返回事务id
+     * @author cyh
+     * 2020/7/4 9:41
+     **/
+    public String beginTransaction() {
+        TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
+        String transactionId = UUID.randomUUID().toString();
+        transcationMap.put(transactionId, transactionStatus);
+        return transactionId;
+    }
+
+    /**
+     * 提交一个事务
+     *
+     * @param transactionId 事务id
+     * @return void
+     * @author cyh
+     * 2020/7/4 9:42
+     **/
+    public void commitTransaction(String transactionId) {
+        transactionManager.commit(transcationMap.get(transactionId));
+    }
+
+    /**
+     * 回滚一个事务
+     *
+     * @param transactionId 事务id
+     * @return void
+     * @author cyh
+     * 2020/7/4 9:42
+     **/
+    public void rollbackTransaction(String transactionId) {
+        transactionManager.rollback(transcationMap.get(transactionId));
     }
 }
