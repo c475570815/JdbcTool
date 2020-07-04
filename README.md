@@ -175,6 +175,23 @@ indi.cyh.jdbctool.modle.DbConfig
             diary.setDHead("update");
             db.updateById(BsDiary.class,diary);
 ```
+- 事务
+
+```
+            JdbcDateBase db = new JdbcDateBase(dbInfo, config);
+            String transactionId = db.beginTransaction();
+            try {
+                // 新增单个实体
+                db.insert(BsDiary.class, new BsDiary() {{
+                    setDHead("head");
+                }});
+                throw  new Exception("eee");
+               // db.commitTransaction(transactionId);
+            }catch (Exception e){
+                db.rollbackTransaction(transactionId);
+            }
+```
+
 ......待更新
 
 
