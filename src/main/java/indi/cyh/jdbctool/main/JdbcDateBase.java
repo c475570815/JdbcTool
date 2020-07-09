@@ -154,7 +154,7 @@ public class JdbcDateBase {
                 entity = new DbInfo();
                 //加载默认主配
                 loadingMainDbConfig(entity);
-            } else if (StringTool.isNotEmpty(entity.getDbType())) {
+            } else if (StringUtils.isNotEmpty(entity.getDbType()) && StringUtils.isEmpty(entity.getConnectStr())) {
                 //把配置结合参数转换未实体类
                 setDbInfo(entity);
             }
@@ -213,12 +213,15 @@ public class JdbcDateBase {
      **/
     private void setDbInfo(DbInfo entity) throws Exception {
         List<DbInfo> defalutConfigList = defaultConfig.getDefalutConfigList();
+        if (defalutConfigList == null) {
+            throw new Exception("未读取到连接串模板配置!");
+        }
         for (DbInfo config : defalutConfigList) {
             if (entity.getDbType().equals(config.getDbType())) {
                 entity.setConnectStr(getDbConnectUrl(config, entity));
                 entity.setDriverClassName(config.getDriverClassName());
                 entity.setUrlTemplate(config.getUrlTemplate());
-                if (StringTool.isEmpty(entity.getIp())) {
+                if (StringUtils.isEmpty(entity.getIp())) {
                     entity.setIp(config.getIp());
                 }
                 return;
