@@ -673,4 +673,18 @@ public class JdbcDateBase {
             throw new Exception("错误的transactionId:" + transactionId);
         }
     }
+
+    /**
+     * 用于执行DDL  sql
+     *
+     * @param sql
+     * @return void
+     * @author CYH
+     * @date 2020/5/15 0015 16:34
+     **/
+    public void executeDDLSql(String sql) {
+        printLog(sql);
+        JdbcTemplate template = getJdbcTemplate();
+        template.execute(sql);
+    }
 }
