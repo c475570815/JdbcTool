@@ -58,6 +58,12 @@ public class JdbcDateBase {
 
     private static Map<DbInfo, DruidDataSource> listDbSource = new LinkedHashMap<>();
 
+    /**
+     * 事务相关
+     */
+    private static DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
+    private static LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
+
     static {
         rl = rrwl.readLock();
         wl = rrwl.writeLock();
@@ -102,11 +108,6 @@ public class JdbcDateBase {
     public DbInfo dbInfo;
 
     DruidDataSource dataSource;
-    /**
-     * 事务相关
-     */
-    DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
-    LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
 
 
     /***
@@ -273,6 +274,7 @@ public class JdbcDateBase {
 
     /**
      * 获取已存在的连接池
+     *
      * @param dbInfo
      * @return com.alibaba.druid.pool.DruidDataSource
      * @author CYH
@@ -290,6 +292,7 @@ public class JdbcDateBase {
         return null;
 
     }
+
     /**
      * 加载给出的数据源信息
      *
@@ -364,15 +367,16 @@ public class JdbcDateBase {
 
     }
 
-   /**
-    * 查询简单类型集合结果
-    * @param sql
-    * @param requiredType
-    * @param params
-    * @return java.util.List<T>
-    * @author CYH
-    * @date 2020/7/10 0010 17:05
-    **/
+    /**
+     * 查询简单类型集合结果
+     *
+     * @param sql
+     * @param requiredType
+     * @param params
+     * @return java.util.List<T>
+     * @author CYH
+     * @date 2020/7/10 0010 17:05
+     **/
     public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
         printLog(sql, params);
         return getJdbcTemplate().query(sql, new RowMapper<T>() {
@@ -723,11 +727,16 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/7/4 9:41
      **/
-    public String beginTransaction() {
-        TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
-        String transactionId = UUID.randomUUID().toString();
-        transcationMap.put(transactionId, transactionStatus);
-        return transactionId;
+    public static String beginTransaction() throws Exception {
+        try {
+            TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
+            String transactionId = UUID.randomUUID().toString();
+            transcationMap.put(transactionId, transactionStatus);
+            System.out.println("开启事务: " + transactionId);
+            return transactionId;
+        } catch (Exception e) {
+            throw new Exception("事务开启异常:" + e.getMessage());
+        }
     }
 
     /**
@@ -738,13 +747,20 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/7/4 9:42
      **/
-    public void commitTransaction(String transactionId) throws Exception {
+    public static void commitTransaction(String transactionId) {
         if (transcationMap.containsKey(transactionId)) {
-            transactionManager.commit(transcationMap.get(transactionId));
-            transcationMap.remove(transactionId);
+            try {
+                transactionManager.commit(transcationMap.get(transactionId));
+                transcationMap.remove(transactionId);
+                System.out.println("事务已提交: " + transactionId);
+            } catch (Exception e) {
+                System.out.println("事务提交异常" + transactionId + ": " + e.getMessage());
+                e.printStackTrace();
+            }
         } else {
-            throw new Exception("错误的transactionId:" + transactionId);
+            System.out.println("事务提交异常--错误的transactionId:" + transactionId);
         }
+
     }
 
     /**
@@ -755,12 +771,17 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/7/4 9:42
      **/
-    public void rollbackTransaction(String transactionId) throws Exception {
+    public static void rollbackTransaction(String transactionId) {
         if (transcationMap.containsKey(transactionId)) {
-            transactionManager.rollback(transcationMap.get(transactionId));
-            transcationMap.remove(transactionId);
+            try {
+                transactionManager.rollback(transcationMap.get(transactionId));
+                transcationMap.remove(transactionId);
+            } catch (Exception e) {
+                System.out.println("事务回归异常" + transactionId + ": " + e.getMessage());
+                e.printStackTrace();
+            }
         } else {
-            throw new Exception("错误的transactionId:" + transactionId);
+            System.out.println("事务回归异常--错误的transactionId:" + transactionId);
         }
     }
 
