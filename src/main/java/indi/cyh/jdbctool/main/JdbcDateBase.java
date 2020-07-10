@@ -56,6 +56,8 @@ public class JdbcDateBase {
 
     private static final TransactionDefinition definition;
 
+    private static Map<DbInfo, DruidDataSource> listDbSource = new LinkedHashMap<>();
+
     static {
         rl = rrwl.readLock();
         wl = rrwl.writeLock();
@@ -191,18 +193,103 @@ public class JdbcDateBase {
      * 2020/5/28 21:58
      **/
     private void loadDatebase(DbInfo dbInfo) {
-//        wl.lock();
-//        rl.lock();
-        dataSource = new DruidDataSource();
+        dataSource = getDataSource(dbInfo);
+    }
+
+    /**
+     * 获取连接池
+     *
+     * @param dbInfo
+     * @return com.alibaba.druid.pool.DruidDataSource
+     * @author CYH
+     * @date 2020/7/10 0010 15:48
+     **/
+    private DruidDataSource getDataSource(DbInfo dbInfo) {
+        DruidDataSource dataSource = getExitDataSource(dbInfo);
+        if (dataSource == null) {
+            dataSource = getNewDataSource(dbInfo);
+        }
+        return dataSource;
+    }
+
+    /**
+     * 生成新的连接池
+     *
+     * @param dbInfo
+     * @return void
+     * @author CYH
+     * @date 2020/7/10 0010 15:49
+     **/
+    private DruidDataSource getNewDataSource(DbInfo dbInfo) {
+        System.out.println("新增连接池-连接:  " + dbInfo.getConnectStr());
+        DruidDataSource dataSource = new DruidDataSource();
         dataSource.setDriverClassName(dbInfo.getDriverClassName());
         dataSource.setUrl(dbInfo.getConnectStr());
         dataSource.setUsername(dbInfo.getLogoinName());
         dataSource.setPassword(dbInfo.getPwd());
+        //配置初始化大小、最小、最大
+        dataSource.setInitialSize(10);
+        dataSource.setMinIdle(10);
+        //最大活跃数
+        dataSource.setMaxActive(20);
+        //配置从连接池获取连接等待超时的时间
+        dataSource.setMaxWait(10000);
+        //配置间隔多久启动一次DestroyThread，对连接池内的连接才进行一次检测，单位是毫秒。
+        //检测时:1.如果连接空闲并且超过minIdle以外的连接，如果空闲时间超过minEvictableIdleTimeMillis设置的值则直接物理关闭。
+        // 2.在minIdle以内的不处理。
+        dataSource.setTimeBetweenEvictionRunsMillis(600000);
+        // 配置一个连接在池中最大空闲时间，单位是毫秒
+        dataSource.setMinEvictableIdleTimeMillis(300000);
+        //  验证连接语句
+        // dataSource.setValidationQuery(false);
+        //设置从连接池获取连接时是否检查连接有效性，true时，如果连接空闲时间超过minEvictableIdleTimeMillis进行检查，否则不检查;false时，不检查
+        dataSource.setTestWhileIdle(false);
+        //设置从连接池获取连接时是否检查连接有效性，true时，每次都检查;false时，不检查
+        dataSource.setTestOnBorrow(false);
+        // 设置往连接池归还连接时是否检查连接有效性，true时，每次都检查;false时，不检查
+        dataSource.setTestOnReturn(false);
+        //打开PSCache，并且指定每个连接上PSCache的大小，Oracle等支持游标的数据库，打开此开关，会以数量级提升性能，具体查阅PSCache相关资料
+        dataSource.setPoolPreparedStatements(true);
+        //
+        dataSource.setMaxPoolPreparedStatementPerConnectionSize(20);
+        //根据自身业务及事务大小来设置
+        dataSource.setConnectionProperties("oracle.net.CONNECT_TIMEOUT=6000;oracle.jdbc.ReadTimeout=180000");
+        //打开后，增强timeBetweenEvictionRunsMillis的周期性连接检查，minIdle内的空闲连接，每次检查强制验证连接有效性. 参考：https://github.com/alibaba/druid/wiki/KeepAlive_cn
+        dataSource.setKeepAlive(true);
+        // 连接泄露检查，打开removeAbandoned功能 , 连接从连接池借出后，长时间不归还，将触发强制回连接。回收周期随timeBetweenEvictionRunsMillis进行，如果连接为从连接池借出状态，并且未执行任何sql，并且从借出时间起已超过removeAbandonedTimeout时间，则强制归还连接到连接池中。
+        dataSource.setRemoveAbandoned(true);
+
+        dataSource.setRemoveAbandonedTimeout(80);
+
         transactionManager.setDataSource(dataSource);
-//        rl.unlock();
-//        wl.unlock();
+        //  wl.lock();
+        rl.lock();
+        listDbSource.put(dbInfo, dataSource);
+        rl.unlock();
+        // wl.unlock();
+        System.out.println("目前连接池数量: " + listDbSource.size());
+        return dataSource;
     }
 
+    /**
+     * 获取已存在的连接池
+     * @param dbInfo
+     * @return com.alibaba.druid.pool.DruidDataSource
+     * @author CYH
+     * @date 2020/7/10 0010 16:00
+     **/
+    private DruidDataSource getExitDataSource(DbInfo dbInfo) {
+        rl.lock();
+        for (DbInfo info : listDbSource.keySet()) {
+            if (DbInfo.equals(info, dbInfo)) {
+                System.out.println("获取到已有连接池:" + info.getConnectStr());
+                return listDbSource.get(info);
+            }
+        }
+        rl.unlock();
+        return null;
+
+    }
     /**
      * 加载给出的数据源信息
      *
@@ -277,15 +364,15 @@ public class JdbcDateBase {
 
     }
 
-    /**
-     * 查询简单类型集合结果
-     *
-     * @param sql
-     * @param params
-     * @return java.util.List<T>
-     * @author cyh
-     * 2020/5/28 22:21
-     **/
+   /**
+    * 查询简单类型集合结果
+    * @param sql
+    * @param requiredType
+    * @param params
+    * @return java.util.List<T>
+    * @author CYH
+    * @date 2020/7/10 0010 17:05
+    **/
     public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
         printLog(sql, params);
         return getJdbcTemplate().query(sql, new RowMapper<T>() {

@@ -89,4 +89,8 @@ public class DbInfo {
     public void setDriverClassName(String driverClassName) {
         this.driverClassName = driverClassName;
     }
+
+    public static boolean equals(DbInfo first, DbInfo secend) {
+        return first.getConnectStr().equals(secend.getConnectStr()) && first.getLogoinName().equals(secend.getLogoinName()) && first.getPwd().equals(secend.getPwd());
+    }
 }
