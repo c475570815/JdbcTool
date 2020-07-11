@@ -263,11 +263,9 @@ public class JdbcDateBase {
         dataSource.setRemoveAbandonedTimeout(80);
 
         transactionManager.setDataSource(dataSource);
-        //  wl.lock();
-        rl.lock();
+        wl.lock();
         listDbSource.put(dbInfo, dataSource);
-        rl.unlock();
-        // wl.unlock();
+        wl.unlock();
         System.out.println("目前连接池数量: " + listDbSource.size());
         return dataSource;
     }
@@ -343,10 +341,15 @@ public class JdbcDateBase {
      * 2020/5/28 21:59
      **/
     private String getDbConnectUrl(DbInfo config, DbInfo entity) {
-        String urlTemplate = config.getUrlTemplate();
-        urlTemplate = urlTemplate.replace(IP, entity.getIp());
-        urlTemplate = urlTemplate.replace(PORT, String.valueOf(entity.getPort()));
-        urlTemplate = urlTemplate.replace(END_PARAM, entity.getEndParam());
+        String urlTemplate = "";
+        if (StringUtils.isEmpty(entity.getConnectStr())) {
+            urlTemplate = config.getUrlTemplate();
+            urlTemplate = urlTemplate.replace(IP, entity.getIp());
+            urlTemplate = urlTemplate.replace(PORT, String.valueOf(entity.getPort()));
+            urlTemplate = urlTemplate.replace(END_PARAM, entity.getEndParam());
+        } else {
+            urlTemplate = entity.getConnectStr();
+        }
         return urlTemplate;
     }
 
