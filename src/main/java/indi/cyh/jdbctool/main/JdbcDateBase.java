@@ -13,13 +13,17 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
 import java.lang.reflect.Field;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -63,6 +67,10 @@ public class JdbcDateBase {
      */
     private static DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
     private static LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
+    /**
+     * 默认主配数据库
+     */
+    public static DruidDataSource mianDataSource;
 
     static {
         rl = rrwl.readLock();
@@ -100,6 +108,13 @@ public class JdbcDateBase {
                 return "JDBC-TOOL";
             }
         };
+
+
+        //加载默认主配
+        DbInfo entity = new DbInfo();
+        loadingMainDbConfig(entity, "");
+        mianDataSource = getNewDataSource(entity);
+
     }
 
     /**
@@ -107,7 +122,7 @@ public class JdbcDateBase {
      */
     public DbInfo dbInfo;
 
-    DruidDataSource dataSource;
+    DruidDataSource dataSource = null;
 
 
     /***
@@ -118,6 +133,8 @@ public class JdbcDateBase {
      * defaultConfig  是否非空
      */
     private boolean hasConfig;
+
+    private boolean useMianDatabaseSource = true;
 
     private void printLog(String sql, @Nullable Object... params) {
         //默认打开打印  当配置中设置了非调试模式则关闭打印
@@ -156,7 +173,7 @@ public class JdbcDateBase {
             if (isUserMainDbConfig) {
                 entity = new DbInfo();
                 //加载默认主配
-                loadingMainDbConfig(entity);
+                loadingMainDbConfig(entity, defaultConfig.getConfigFileName());
             } else if (StringUtils.isNotEmpty(entity.getDbType()) && StringUtils.isEmpty(entity.getConnectStr())) {
                 //把配置结合参数转换未实体类
                 setDbInfo(entity);
@@ -164,6 +181,19 @@ public class JdbcDateBase {
         }
         //根据实体生成数据源
         loadDatebase(entity);
+        useMianDatabaseSource = false;
+    }
+
+    private JdbcDateBase() {
+
+    }
+
+    public static JdbcDateBase getMainJdbcDateBase() throws Exception {
+        JdbcDateBase db = new JdbcDateBase();
+        rl.lock();
+        db.dataSource = mianDataSource;
+        rl.unlock();
+        return db;
     }
 
     /**
@@ -174,10 +204,10 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/5/28 21:55
      **/
-    private void loadingMainDbConfig(DbInfo entity) {
+    private static void loadingMainDbConfig(DbInfo entity, String configFileName) {
         YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
-        String configFileName = StringTool.isEmpty(defaultConfig.getConfigFileName()) ? DEFAULT_CONFIG_NAME : defaultConfig.getConfigFileName();
-        yaml.setResources(new ClassPathResource(configFileName));
+        String fileName = StringUtils.isEmpty(configFileName) ? DEFAULT_CONFIG_NAME : configFileName;
+        yaml.setResources(new ClassPathResource(fileName));
         Properties properties = yaml.getObject();
         entity.setConnectStr(String.valueOf(properties.get(MAIN_DB_URL_PATH)));
         entity.setLogoinName(String.valueOf(properties.get(MAIN_DB_URL_USERNAME_PATH)));
@@ -193,19 +223,7 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/5/28 21:58
      **/
-    private void loadDatebase(DbInfo dbInfo) {
-        dataSource = getDataSource(dbInfo);
-    }
-
-    /**
-     * 获取连接池
-     *
-     * @param dbInfo
-     * @return com.alibaba.druid.pool.DruidDataSource
-     * @author CYH
-     * @date 2020/7/10 0010 15:48
-     **/
-    private DruidDataSource getDataSource(DbInfo dbInfo) {
+    private DruidDataSource loadDatebase(DbInfo dbInfo) {
         DruidDataSource dataSource = getExitDataSource(dbInfo);
         if (dataSource == null) {
             dataSource = getNewDataSource(dbInfo);
@@ -221,7 +239,7 @@ public class JdbcDateBase {
      * @author CYH
      * @date 2020/7/10 0010 15:49
      **/
-    private DruidDataSource getNewDataSource(DbInfo dbInfo) {
+    private static DruidDataSource getNewDataSource(DbInfo dbInfo) {
         System.out.println("新增连接池-连接:  " + dbInfo.getConnectStr());
         DruidDataSource dataSource = new DruidDataSource();
         dataSource.setDriverClassName(dbInfo.getDriverClassName());
@@ -327,7 +345,7 @@ public class JdbcDateBase {
      **/
     public JdbcTemplate getJdbcTemplate() {
         JdbcTemplate template = new JdbcTemplate();
-        template.setDataSource(this.dataSource);
+        template.setDataSource(useMianDatabaseSource ? mianDataSource : this.dataSource);
         return template;
     }
 
