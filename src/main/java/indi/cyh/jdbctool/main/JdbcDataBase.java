@@ -380,9 +380,15 @@ public class JdbcDataBase {
      **/
     public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
         printLog(sql, params);
+        long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        return (T) template.queryForObject(sql, requiredType, params);
+        T t = (T) template.queryForObject(sql, requiredType, params);
+        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        return t;
+    }
 
+    private String getTimeString(long l) {
+       return  (l/1000) + "秒";
     }
 
     /**
@@ -397,12 +403,15 @@ public class JdbcDataBase {
      **/
     public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
         printLog(sql, params);
-        return getJdbcTemplate().query(sql, new RowMapper<T>() {
+        long start = System.currentTimeMillis();
+        List<T> t = getJdbcTemplate().query(sql, new RowMapper<T>() {
             @Override
             public T mapRow(ResultSet resultSet, int i) throws SQLException {
                 return (T) resultSet.getObject(1);
             }
         });
+        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        return t;
     }
 
     /**
@@ -417,8 +426,11 @@ public class JdbcDataBase {
      **/
     public <T> T queryOneRow(String sql, Class<T> requiredType, @Nullable Object... params) {
         printLog(sql, params);
+        long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        return (T) template.queryForObject(sql, new JdbcRowMapper<T>(requiredType), params);
+        T t = (T) template.queryForObject(sql, new JdbcRowMapper<T>(requiredType), params);
+        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        return t;
     }
 
     /**
@@ -433,8 +445,11 @@ public class JdbcDataBase {
      **/
     public <T> List<T> queryList(String sql, Class<T> requiredType, @Nullable Object... params) {
         printLog(sql, params);
+        long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        return template.query(sql, new JdbcRowMapper<T>(requiredType), params);
+        List<T> t=template.query(sql, new JdbcRowMapper<T>(requiredType), params);
+        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        return t;
     }
 
     /**
@@ -448,8 +463,11 @@ public class JdbcDataBase {
      **/
     public Map queryForMap(String sql, @Nullable Object... params) {
         printLog(sql, params);
+        long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        return template.queryForMap(sql, params);
+        Map map = template.queryForMap(sql, params);
+        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        return map;
     }
 
     /**
@@ -462,8 +480,11 @@ public class JdbcDataBase {
      **/
     public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
         printLog(sql, params);
+        long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        return template.queryForList(sql, params);
+        List<Map<String, Object>> list = template.queryForList(sql, params);
+        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        return list;
     }
 
     /**
@@ -479,12 +500,14 @@ public class JdbcDataBase {
      **/
     public Map<String, Object> queryPageData(String sql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
         Map<String, Object> resMap = new HashMap<>();
+        long start = System.currentTimeMillis();
         PageQueryInfo queryInfo = getPageQueryInfo(page, rows, sql);
         resMap.put("total", querySingleTypeResult(queryInfo.getCountSql(), int.class, params));
         List<Map<String, Object>> pageData = queryListMap(queryInfo.getPageSql(), params);
         resMap.put("pageData", isResultString ? resultConvert(pageData) : pageData);
         resMap.put("page", page);
         resMap.put("rows", rows);
+        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
         return resMap;
     }
 
@@ -745,7 +768,7 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/7/4 9:41
      **/
-    public  String beginTransaction() throws Exception {
+    public String beginTransaction() throws Exception {
         try {
             TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
             String transactionId = UUID.randomUUID().toString();
@@ -765,7 +788,7 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/7/4 9:42
      **/
-    public  void commitTransaction(String transactionId) {
+    public void commitTransaction(String transactionId) {
         if (transcationMap.containsKey(transactionId)) {
             try {
                 transactionManager.commit(transcationMap.get(transactionId));
@@ -789,7 +812,7 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/7/4 9:42
      **/
-    public  void rollbackTransaction(String transactionId) {
+    public void rollbackTransaction(String transactionId) {
         if (transcationMap.containsKey(transactionId)) {
             try {
                 transactionManager.rollback(transcationMap.get(transactionId));
