@@ -6,6 +6,7 @@ import indi.cyh.jdbctool.entity.BsDiary;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
+import indi.cyh.jdbctool.tool.LogTool;
 import indi.cyh.jdbctool.tool.StringTool;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
@@ -33,15 +34,19 @@ import java.util.regex.Pattern;
  */
 public class JdbcDataBase {
 
-    static final String IP = "{{IP}}";
-    static final String PORT = "{{PORT}}";
-    static final String END_PARAM = "{{END_PARAM}}";
-    static final String DEFAULT_CONFIG_NAME = "application.yml";
-    static final String MAIN_DB_URL_PATH = "spring.datasource.url";
-    static final String MAIN_DB_URL_USERNAME_PATH = "spring.datasource.username";
-    static final String MAIN_DB_URL_PWD_PATH = "spring.datasource.password";
-    static final String MAIN_DB_URL_DRIVER_PATH = "spring.datasource.driver-class-name";
+    //配置文件相关参数
+    private static final String DEFAULT_CONFIG_NAME = "application.yml";
+    private static final String MAIN_DB_URL_PATH = "spring.datasource.url";
+    private static final String MAIN_DB_URL_USERNAME_PATH = "spring.datasource.username";
+    private static final String MAIN_DB_URL_PWD_PATH = "spring.datasource.password";
+    private static final String MAIN_DB_URL_DRIVER_PATH = "spring.datasource.driver-class-name";
 
+    //jdbc连接生成相关参数
+    private static final String IP = "{{IP}}";
+    private static final String PORT = "{{PORT}}";
+    private static final String END_PARAM = "{{END_PARAM}}";
+
+    //sql 匹配相应参数
     private static final Pattern selectPattern;
     private static final Pattern fromPattern;
     private static final Pattern PATTERN_BRACKET;
@@ -49,35 +54,37 @@ public class JdbcDataBase {
     private static final Pattern PATTERN_DISTINCT;
     private static final Pattern rxOrderBy;
 
-
+    //静态控制锁
     private static final ReentrantReadWriteLock rrwl = new ReentrantReadWriteLock();
     private static final ReentrantReadWriteLock.ReadLock rl;
     private static final ReentrantReadWriteLock.WriteLock wl;
 
-    private static final TransactionDefinition definition;
-
+    /**
+     * 静态连接池
+     */
     private static Map<DbInfo, DruidDataSource> listDbSource = new LinkedHashMap<>();
 
-    /**
-     * 事务相关
-     */
-    private DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
-    private LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
+    ////事务相关
+    private static final TransactionDefinition definition;
+    private final DataSourceTransactionManager  transactionManager = new DataSourceTransactionManager();
+    private final LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
     /**
      * 默认主配数据库
      */
-    public static DruidDataSource mianDataSource;
+    private static DruidDataSource mianDataSource;
 
     static {
+        //锁赋值
         rl = rrwl.readLock();
         wl = rrwl.writeLock();
+        //sql 匹配相应参数 赋值
         selectPattern = Pattern.compile("\\s*(SELECT|EXECUTE|CALL)\\s", 78);
         fromPattern = Pattern.compile("\\s*FROM\\s", 74);
         PATTERN_BRACKET = Pattern.compile("(\\(|\\)|[^\\(\\)]*)");
         PATTERN_SELECT = Pattern.compile("select([\\W\\w]*)from", 78);
         PATTERN_DISTINCT = Pattern.compile("\\A\\s+DISTINCT\\s", 78);
         rxOrderBy = Pattern.compile("\\bORDER\\s+BY\\s+([\\W\\w]*)(ASC|DESC)+", 78);
-
+        //事务参数赋默认值
         definition = new TransactionDefinition() {
             @Override
             public int getPropagationBehavior() {
@@ -105,14 +112,13 @@ public class JdbcDataBase {
             }
         };
 
-
         //加载默认主配
         try {
             DbInfo entity = new DbInfo();
             loadingMainDbConfig(entity, "");
             mianDataSource = getNewDataSource(entity);
         } catch (Exception e) {
-            System.out.printf("主数据库加载失败! ---" + e.getMessage());
+            System.out.println("主数据库加载失败! ---" + e.getMessage());
         }
 
     }
@@ -121,11 +127,12 @@ public class JdbcDataBase {
      * 数据库信息实体类
      */
     public DbInfo dbInfo;
-
+    /**
+     * 当前对象使用的数据池
+     */
     DruidDataSource dataSource = null;
 
-
-    /***
+    /**
      * 配置文件读取的默认配置
      */
     private DbConfig defaultConfig;
@@ -133,29 +140,13 @@ public class JdbcDataBase {
      * defaultConfig  是否非空
      */
     private boolean hasConfig;
-
-    private boolean useMianDatabaseSource = true;
-
-    private void printLog(String sql, @Nullable Object... params) {
-        //默认打开打印  当配置中设置了非调试模式则关闭打印
-        if (!hasConfig || defaultConfig.isDebugger()) {
-            System.out.println("##########################################JDBCTOOL##########################################");
-            System.out.println("conStr:" + dataSource.getRawJdbcUrl());
-            System.out.println("");
-            System.out.println("sql : " + sql);
-            if (params != null && params.length != 0) {
-                System.out.println("");
-                System.out.println(params.length + "  params");
-                System.out.println("");
-                for (int i = 0; i < params.length; i++) {
-                    System.out.println("param-" + (i + 1) + ": " + String.valueOf(params[i]) + "[" + params[i].getClass().getName() + "]");
-                    System.out.println("");
-                }
-            }
-            System.out.println("##########################################JDBCTOOL##########################################");
-        }
-    }
-
+    /**
+     * 从配置文件中获取是否为调试模式
+     */
+    private final boolean isDebugger=!hasConfig || defaultConfig.isDebugger();
+    
+    private final LogTool  log =new LogTool(isDebugger);
+    
     /**
      * 根据参数初始化 数据源
      *
@@ -181,7 +172,6 @@ public class JdbcDataBase {
         }
         //根据实体生成数据源
         loadDatabase(entity);
-        useMianDatabaseSource = false;
     }
 
     private JdbcDataBase() {
@@ -342,7 +332,7 @@ public class JdbcDataBase {
      **/
     public JdbcTemplate getJdbcTemplate() {
         JdbcTemplate template = new JdbcTemplate();
-        template.setDataSource(useMianDatabaseSource ? mianDataSource : this.dataSource);
+        template.setDataSource(this.dataSource);
         return template;
     }
 
@@ -379,18 +369,14 @@ public class JdbcDataBase {
      * @date 2020/5/29 0029 16:44
      **/
     public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
-        printLog(sql, params);
+        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
         T t = (T) template.queryForObject(sql, requiredType, params);
-        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        log.printTimeLost(start);
         return t;
     }
-
-    private String getTimeString(long l) {
-       return  (l/1000) + "秒";
-    }
-
+    
     /**
      * 查询简单类型集合结果
      *
@@ -402,7 +388,7 @@ public class JdbcDataBase {
      * @date 2020/7/10 0010 17:05
      **/
     public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
-        printLog(sql, params);
+        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         List<T> t = getJdbcTemplate().query(sql, new RowMapper<T>() {
             @Override
@@ -410,7 +396,7 @@ public class JdbcDataBase {
                 return (T) resultSet.getObject(1);
             }
         });
-        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        log.printTimeLost(start);
         return t;
     }
 
@@ -425,11 +411,11 @@ public class JdbcDataBase {
      * 2020/4/11 15:41
      **/
     public <T> T queryOneRow(String sql, Class<T> requiredType, @Nullable Object... params) {
-        printLog(sql, params);
+        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
         T t = (T) template.queryForObject(sql, new JdbcRowMapper<T>(requiredType), params);
-        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        log.printTimeLost(start);
         return t;
     }
 
@@ -444,11 +430,11 @@ public class JdbcDataBase {
      * 2020/5/28 22:12
      **/
     public <T> List<T> queryList(String sql, Class<T> requiredType, @Nullable Object... params) {
-        printLog(sql, params);
+        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        List<T> t=template.query(sql, new JdbcRowMapper<T>(requiredType), params);
-        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        List<T> t = template.query(sql, new JdbcRowMapper<T>(requiredType), params);
+        log.printTimeLost(start);
         return t;
     }
 
@@ -462,11 +448,11 @@ public class JdbcDataBase {
      * 2020/5/28 22:12
      **/
     public Map queryForMap(String sql, @Nullable Object... params) {
-        printLog(sql, params);
+        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
         Map map = template.queryForMap(sql, params);
-        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        log.printTimeLost(start);
         return map;
     }
 
@@ -479,11 +465,11 @@ public class JdbcDataBase {
      * 2020/4/11 18:11
      **/
     public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
-        printLog(sql, params);
+        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
         List<Map<String, Object>> list = template.queryForList(sql, params);
-        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        log.printTimeLost(start);
         return list;
     }
 
@@ -507,7 +493,7 @@ public class JdbcDataBase {
         resMap.put("pageData", isResultString ? resultConvert(pageData) : pageData);
         resMap.put("page", page);
         resMap.put("rows", rows);
-        System.out.println("查询耗时:" + getTimeString(System.currentTimeMillis() - start));
+        log.printTimeLost(start);
         return resMap;
     }
 
@@ -599,7 +585,7 @@ public class JdbcDataBase {
      * 2020/4/11 18:05
      **/
     public int executeDMLSql(String sql, @Nullable Object... params) {
-        printLog(sql, params);
+        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         JdbcTemplate template = getJdbcTemplate();
         return template.update(sql, params);
     }
@@ -835,7 +821,7 @@ public class JdbcDataBase {
      * @date 2020/5/15 0015 16:34
      **/
     public void executeDDLSql(String sql) {
-        printLog(sql);
+         log.printLog(sql, dataSource.getRawJdbcUrl());
         JdbcTemplate template = getJdbcTemplate();
         template.execute(sql);
     }
