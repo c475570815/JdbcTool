@@ -131,8 +131,12 @@ public class JdbcDataBase {
         //加载默认主配
         try {
             DbInfo entity = new DbInfo();
-            loadingMainDbConfig(entity);
-            mianDataSource = getNewDataSource(entity);
+            if (properties.get(MAIN_DB_URL_PATH) != null) {
+                loadingMainDbConfig(entity);
+                mianDataSource = getNewDataSource(entity);
+            }else {
+                throw new Exception(DEFAULT_CONFIG_NAME+"中没有配置数据库信息!");
+            }
         } catch (Exception e) {
             System.out.println("主数据库加载失败! ---" + e.getMessage());
         }
@@ -277,9 +281,9 @@ public class JdbcDataBase {
         dataSource.setRemoveAbandoned(true);
 
         dataSource.setRemoveAbandonedTimeout(80);
-        wl.lock();
+
         listDbSource.put(dbInfo, dataSource);
-        wl.unlock();
+
         System.out.println("目前连接池数量: " + listDbSource.size());
         return dataSource;
     }
@@ -297,6 +301,7 @@ public class JdbcDataBase {
         for (DbInfo info : listDbSource.keySet()) {
             if (DbInfo.equals(info, dbInfo)) {
                 System.out.println("获取到已有连接池:" + info.getConnectStr());
+                System.out.println("目前连接池数量: " + listDbSource.size());
                 return listDbSource.get(info);
             }
         }

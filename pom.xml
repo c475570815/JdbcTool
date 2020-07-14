@@ -20,6 +20,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
             <version>2.2.6.RELEASE</version>
+            <scope>provided</scope>
         </dependency>
         <!--spring-boot-configuration-processor -->
         <dependency>
@@ -76,6 +77,15 @@
         <!--打包出来的文件名-->
         <finalName>jdbcTool</finalName>
         <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
