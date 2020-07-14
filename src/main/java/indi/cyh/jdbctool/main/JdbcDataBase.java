@@ -13,17 +13,13 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
 import java.lang.reflect.Field;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -35,7 +31,7 @@ import java.util.regex.Pattern;
  * @Author gm
  * @Date 2020/4/11 8:36
  */
-public class JdbcDateBase {
+public class JdbcDataBase {
 
     static final String IP = "{{IP}}";
     static final String PORT = "{{PORT}}";
@@ -65,8 +61,8 @@ public class JdbcDateBase {
     /**
      * 事务相关
      */
-    private static DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
-    private static LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
+    private DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
+    private LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
     /**
      * 默认主配数据库
      */
@@ -111,9 +107,13 @@ public class JdbcDateBase {
 
 
         //加载默认主配
-        DbInfo entity = new DbInfo();
-        loadingMainDbConfig(entity, "");
-        mianDataSource = getNewDataSource(entity);
+        try {
+            DbInfo entity = new DbInfo();
+            loadingMainDbConfig(entity, "");
+            mianDataSource = getNewDataSource(entity);
+        } catch (Exception e) {
+            System.out.printf("主数据库加载失败! ---" + e.getMessage());
+        }
 
     }
 
@@ -164,7 +164,7 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/5/28 21:54
      **/
-    public JdbcDateBase(DbInfo entity, DbConfig config) throws Exception {
+    public JdbcDataBase(DbInfo entity, DbConfig config) throws Exception {
         hasConfig = config != null;
         if (hasConfig) {
             this.defaultConfig = config;
@@ -180,19 +180,18 @@ public class JdbcDateBase {
             }
         }
         //根据实体生成数据源
-        loadDatebase(entity);
+        loadDatabase(entity);
         useMianDatabaseSource = false;
     }
 
-    private JdbcDateBase() {
+    private JdbcDataBase() {
 
     }
 
-    public static JdbcDateBase getMainJdbcDateBase() throws Exception {
-        JdbcDateBase db = new JdbcDateBase();
-        rl.lock();
+    public static JdbcDataBase getMainJdbcDataBase() throws Exception {
+        JdbcDataBase db = new JdbcDataBase();
         db.dataSource = mianDataSource;
-        rl.unlock();
+        db.transactionManager.setDataSource(db.dataSource);
         return db;
     }
 
@@ -223,12 +222,12 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/5/28 21:58
      **/
-    private DruidDataSource loadDatebase(DbInfo dbInfo) {
+    private void loadDatabase(DbInfo dbInfo) {
         DruidDataSource dataSource = getExitDataSource(dbInfo);
         if (dataSource == null) {
             dataSource = getNewDataSource(dbInfo);
+            transactionManager.setDataSource(dataSource);
         }
-        return dataSource;
     }
 
     /**
@@ -279,8 +278,6 @@ public class JdbcDateBase {
         dataSource.setRemoveAbandoned(true);
 
         dataSource.setRemoveAbandonedTimeout(80);
-
-        transactionManager.setDataSource(dataSource);
         wl.lock();
         listDbSource.put(dbInfo, dataSource);
         wl.unlock();
@@ -480,12 +477,12 @@ public class JdbcDateBase {
      * @author CYH
      * @date 2020/4/28 0028 16:03
      **/
-    public Map<String, Object> queryPageDate(String sql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
+    public Map<String, Object> queryPageData(String sql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
         Map<String, Object> resMap = new HashMap<>();
         PageQueryInfo queryInfo = getPageQueryInfo(page, rows, sql);
         resMap.put("total", querySingleTypeResult(queryInfo.getCountSql(), int.class, params));
-        List<Map<String, Object>> pageDate = queryListMap(queryInfo.getPageSql(), params);
-        resMap.put("pageDate", isResultString ? resultConvert(pageDate) : pageDate);
+        List<Map<String, Object>> pageData = queryListMap(queryInfo.getPageSql(), params);
+        resMap.put("pageData", isResultString ? resultConvert(pageData) : pageData);
         resMap.put("page", page);
         resMap.put("rows", rows);
         return resMap;
@@ -534,29 +531,29 @@ public class JdbcDateBase {
     /**
      * 查询listmap时 转换一些特殊类型为String
      *
-     * @param pageDate
+     * @param pageData
      * @return java.lang.Object
      * @author cyh
      * 2020/5/28 22:15
      **/
-    private Object resultConvert(List<Map<String, Object>> pageDate) {
+    private Object resultConvert(List<Map<String, Object>> pageData) {
         HashMap<String, ConvertType> convertMap = new HashMap<>();
         List<String> hasCheckColumnList = new ArrayList<>();
-        for (Map<String, Object> row : pageDate) {
-            DataConvertTool.getConvertColumn(pageDate.get(0), hasCheckColumnList, convertMap);
+        for (Map<String, Object> row : pageData) {
+            DataConvertTool.getConvertColumn(pageData.get(0), hasCheckColumnList, convertMap);
             if (convertMap.keySet().size() > 0) {
                 for (String columnKey : convertMap.keySet()) {
-                    Object columnDate = row.get(columnKey);
-                    if (columnDate != null) {
+                    Object columnData = row.get(columnKey);
+                    if (columnData != null) {
                         switch (convertMap.get(columnKey)) {
                             case BYTE_TO_BASE64:
-                                row.put(columnKey, DataConvertTool.byteToBase64(columnDate));
+                                row.put(columnKey, DataConvertTool.byteToBase64(columnData));
                                 break;
                             case TIMESTAMP_TO_STRING:
-                                row.put(columnKey, DataConvertTool.timestampToString(columnDate));
+                                row.put(columnKey, DataConvertTool.timestampToString(columnData));
                                 break;
                             case PGOBJECT_TO_STRING:
-                                row.put(columnKey, DataConvertTool.pgObjectToString(columnDate));
+                                row.put(columnKey, DataConvertTool.pgObjectToString(columnData));
                             default:
                                 break;
                         }
@@ -566,7 +563,7 @@ public class JdbcDateBase {
                 }
             }
         }
-        return pageDate;
+        return pageData;
     }
 
     /**
@@ -748,7 +745,7 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/7/4 9:41
      **/
-    public static String beginTransaction() throws Exception {
+    public  String beginTransaction() throws Exception {
         try {
             TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
             String transactionId = UUID.randomUUID().toString();
@@ -768,7 +765,7 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/7/4 9:42
      **/
-    public static void commitTransaction(String transactionId) {
+    public  void commitTransaction(String transactionId) {
         if (transcationMap.containsKey(transactionId)) {
             try {
                 transactionManager.commit(transcationMap.get(transactionId));
@@ -792,7 +789,7 @@ public class JdbcDateBase {
      * @author cyh
      * 2020/7/4 9:42
      **/
-    public static void rollbackTransaction(String transactionId) {
+    public  void rollbackTransaction(String transactionId) {
         if (transcationMap.containsKey(transactionId)) {
             try {
                 transactionManager.rollback(transcationMap.get(transactionId));
