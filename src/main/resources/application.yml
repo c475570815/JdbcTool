@@ -2,9 +2,9 @@ spring:
   application:
     name: singlewood-provider
   datasource:
-    url: jdbc:mysql://106.52.167.158:3306/singlewood
-    username: root
-    password: cyh123321
+    url: *
+    username: *
+    password: *
     driver-class-name: com.mysql.cj.jdbc.Driver
 db-config:
   # 配置生成connectStr模板
