@@ -18,7 +18,7 @@
             setPwd("***");
             setEndParam("singlewood");
         }};
-    JdbcDateBase db = new JdbcDateBase(dbInfo, config);
+    JdbcDataBase db = new JdbcDataBase(dbInfo, config);
 ```
 
    2.  动态注入数据库连接串和使用的数据库驱动生成数据源(DbConfig 参数可为null)
@@ -32,16 +32,16 @@
                 setLogoinName("root");
                 setPwd("cyh123321");
             }};
-            JdbcDateBase db = new JdbcDateBase(dbInfo, config);
+            JdbcDataBase db = new JdbcDataBase(dbInfo, config);
 ```
 
 
-   3.  在实例化JdbcDateBase时,传入DbInfo为null则以配置文件中主数据库配置(spring.datasource)参数来生成数据源(DbConfig 参数可为null)
+   3.  在实例化JdbcDataBase时,传入DbInfo为null则以配置文件中主数据库配置(spring.datasource)参数来生成数据源(DbConfig 参数可为null)
 
 ```
 @Autowired
     private DbConfig config;
-    JdbcDateBase db = new JdbcDateBase(null, config);
+    JdbcDataBase db = new JdbcDataBase(null, config);
 ```
 
 - 主数据库配置示例
@@ -83,7 +83,7 @@ db-config:
 
 ```
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-indi.cyh.jdbctool.modle.DbConfig
+indi.cyh.jdbctool.config.DbConfig
 ```
 ### 使用示例
 1. 初始化数据连接
@@ -99,7 +99,7 @@ indi.cyh.jdbctool.modle.DbConfig
             setPwd("***");
             setEndParam("singlewood");
         }};
-    JdbcDateBase db = new JdbcDateBase(dbInfo, config);
+    JdbcDataBase db = new JdbcDataBase(dbInfo, config);
 ```
 2. 具体使用
 - 新增单个实体
@@ -157,7 +157,7 @@ indi.cyh.jdbctool.modle.DbConfig
 - 分页查询
 
 ```
-            db.queryPageDate("select  *  from bs_diary",1,10,true);
+            db.queryPageData("select  *  from bs_diary",1,10,true);
 ```
 - 根据id更新
 ```
@@ -168,7 +168,7 @@ indi.cyh.jdbctool.modle.DbConfig
 - 事务
 
 ```
-            JdbcDateBase db = new JdbcDateBase(dbInfo, config);
+            JdbcDataBase db = new JdbcDataBase(dbInfo, config);
             String transactionId = db.beginTransaction();
             try {
                 // 新增单个实体
