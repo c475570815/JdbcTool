@@ -27,10 +27,10 @@
 @Autowired
     private DbConfig config;
     DbInfo dbInfo = new DbInfo() {{
-                setConnectStr("jdbc:mysql://106.52.167.158:3306/singlewood");
+                setConnectStr("jdbc:mysql://*:3306/singlewood");
                 setDriverClassName("com.mysql.cj.jdbc.Driver");
-                setLogoinName("root");
-                setPwd("cyh123321");
+                setLogoinName("*");
+                setPwd("*");
             }};
             JdbcDataBase db = new JdbcDataBase(dbInfo, config);
 ```
