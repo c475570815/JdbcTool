@@ -9,6 +9,7 @@
 - 多数据源
 - 多种数据库连接(mysql、Oracle、postgres)
 - 支持分页
+- 集成duird(若有需要可在项目中添加druid监控页面配置)
 
 
 #### 使用说明
