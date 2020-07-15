@@ -3,6 +3,14 @@
 #### 介绍
 工具依靠spring-jdbc的多源操作数据库工具结合springboot使用
 
+#### 特性
+
+- 支持动态加载数据池
+- 多数据源
+- 多种数据库连接(mysql、Oracle、postgres)
+- 支持分页
+
+
 #### 使用说明
 目前有三种方式生成数据源
    1.  在配置文件中配置不同类型的jdbcConnection模板,通过DbConfig实体类给出相关参数生成数据源
