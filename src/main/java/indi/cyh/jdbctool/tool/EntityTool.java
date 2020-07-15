@@ -73,6 +73,7 @@ public class EntityTool {
             return null;
         }
     }
+
     /**
      * 实体类字段对应表字段
      *
@@ -93,6 +94,21 @@ public class EntityTool {
             e.printStackTrace();
             return null;
         }
+    }
+    /**
+     * 获取类型的字段名
+     * @param type
+     * @return java.util.List<java.lang.String>
+     * @author cyh
+     * 2020/7/14 22:34
+     **/
+    public static <T> List<String> getEntityFieldName(Class<T> type) {
+        Field[] fields = type.getDeclaredFields();
+        List<String> filedNameArr = new ArrayList<>();
+        for (Field field : fields) {
+            filedNameArr.add(field.getName());
+        }
+        return filedNameArr;
     }
 
 

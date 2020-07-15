@@ -41,6 +41,9 @@ public class JdbcDataBase {
     private static final String MAIN_DB_URL_PWD_PATH = "spring.datasource.password";
     private static final String MAIN_DB_URL_DRIVER_PATH = "spring.datasource.driver-class-name";
 
+    private static final String JDBC_URL_MODE = "db-config.defalut-config-list";
+    private static final String IS_DEBUGGER = "db-config.debugger";
+
     //jdbc连接生成相关参数
     private static final String IP = "{{IP}}";
     private static final String PORT = "{{PORT}}";
@@ -66,12 +69,21 @@ public class JdbcDataBase {
 
     ////事务相关
     private static final TransactionDefinition definition;
-    private final DataSourceTransactionManager  transactionManager = new DataSourceTransactionManager();
+    private final DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
     private final LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
     /**
      * 默认主配数据库
      */
     private static DruidDataSource mianDataSource;
+    /**
+     * 配置文件对象
+     */
+    private static Properties properties;
+
+    /**
+     * 配置文件读取的默认配置
+     */
+    private static DbConfig defaultConfig;
 
     static {
         //锁赋值
@@ -112,16 +124,20 @@ public class JdbcDataBase {
             }
         };
 
+        //获取配置文件对象
+        YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
+        yaml.setResources(new ClassPathResource(DEFAULT_CONFIG_NAME));
+        properties = yaml.getObject();
         //加载默认主配
         try {
             DbInfo entity = new DbInfo();
-            loadingMainDbConfig(entity, "");
+            loadingMainDbConfig(entity);
             mianDataSource = getNewDataSource(entity);
         } catch (Exception e) {
             System.out.println("主数据库加载失败! ---" + e.getMessage());
         }
-
     }
+
 
     /**
      * 数据库信息实体类
@@ -132,10 +148,7 @@ public class JdbcDataBase {
      */
     DruidDataSource dataSource = null;
 
-    /**
-     * 配置文件读取的默认配置
-     */
-    private DbConfig defaultConfig;
+
     /**
      * defaultConfig  是否非空
      */
@@ -143,10 +156,10 @@ public class JdbcDataBase {
     /**
      * 从配置文件中获取是否为调试模式
      */
-    private final boolean isDebugger=!hasConfig || defaultConfig.isDebugger();
-    
-    private final LogTool  log =new LogTool(isDebugger);
-    
+    private final boolean isDebugger = !hasConfig || defaultConfig.isDebugger();
+
+    private final LogTool log = new LogTool(isDebugger);
+
     /**
      * 根据参数初始化 数据源
      *
@@ -164,7 +177,7 @@ public class JdbcDataBase {
             if (isUserMainDbConfig) {
                 entity = new DbInfo();
                 //加载默认主配
-                loadingMainDbConfig(entity, defaultConfig.getConfigFileName());
+                loadingMainDbConfig(entity);
             } else if (StringUtils.isNotEmpty(entity.getDbType()) && StringUtils.isEmpty(entity.getConnectStr())) {
                 //把配置结合参数转换未实体类
                 setDbInfo(entity);
@@ -193,11 +206,7 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/5/28 21:55
      **/
-    private static void loadingMainDbConfig(DbInfo entity, String configFileName) {
-        YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
-        String fileName = StringUtils.isEmpty(configFileName) ? DEFAULT_CONFIG_NAME : configFileName;
-        yaml.setResources(new ClassPathResource(fileName));
-        Properties properties = yaml.getObject();
+    private static void loadingMainDbConfig(DbInfo entity) {
         entity.setConnectStr(String.valueOf(properties.get(MAIN_DB_URL_PATH)));
         entity.setLogoinName(String.valueOf(properties.get(MAIN_DB_URL_USERNAME_PATH)));
         entity.setPwd(String.valueOf(properties.get(MAIN_DB_URL_PWD_PATH)));
@@ -213,11 +222,11 @@ public class JdbcDataBase {
      * 2020/5/28 21:58
      **/
     private void loadDatabase(DbInfo dbInfo) {
-        DruidDataSource dataSource = getExitDataSource(dbInfo);
+        this.dataSource = getExitDataSource(dbInfo);
         if (dataSource == null) {
             dataSource = getNewDataSource(dbInfo);
-            transactionManager.setDataSource(dataSource);
         }
+        transactionManager.setDataSource(this.dataSource);
     }
 
     /**
@@ -376,7 +385,7 @@ public class JdbcDataBase {
         log.printTimeLost(start);
         return t;
     }
-    
+
     /**
      * 查询简单类型集合结果
      *
@@ -821,7 +830,7 @@ public class JdbcDataBase {
      * @date 2020/5/15 0015 16:34
      **/
     public void executeDDLSql(String sql) {
-         log.printLog(sql, dataSource.getRawJdbcUrl());
+        log.printLog(sql, dataSource.getRawJdbcUrl());
         JdbcTemplate template = getJdbcTemplate();
         template.execute(sql);
     }
