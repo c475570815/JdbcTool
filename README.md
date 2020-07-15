@@ -89,7 +89,7 @@ indi.cyh.jdbctool.config.DbConfig
 1. 初始化数据连接
 
 ```
-    //手动注入配置
+    //手动注入配置(这里DbConfig 也可以不使用bean)
     @Autowired
     private DbConfig config;
     DbInfo dbInfo = new DbInfo() {{
