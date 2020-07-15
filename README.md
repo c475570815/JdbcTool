@@ -1,7 +1,7 @@
 # JdbcTool
 
 #### 介绍
-工具依靠spring-jdbc的多源操作数据库工具
+依靠spring-jdbc的动态多源操作数据库工具
 
 #### 特性
 
