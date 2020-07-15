@@ -89,6 +89,7 @@ indi.cyh.jdbctool.config.DbConfig
 1. 初始化数据连接
 
 ```
+    //手动注入配置
     @Autowired
     private DbConfig config;
     DbInfo dbInfo = new DbInfo() {{
@@ -100,6 +101,16 @@ indi.cyh.jdbctool.config.DbConfig
             setEndParam("singlewood");
         }};
     JdbcDataBase db = new JdbcDataBase(dbInfo, config);
+    //使用application.yml数据库配置
+    JdbcDataBase db = JdbcDataBase.getMainJdbcDataBase();
+    //直接使用连接(不用配置) 
+    DbInfo dbInfo = new DbInfo() {{
+        setConnectStr("jdbc:mysql://*:3306/singlewood");
+        setDriverClassName("com.mysql.cj.jdbc.Driver");
+        setLogoinName("*");
+        setPwd("*");
+    }};
+    JdbcDataBase db = new JdbcDataBase(dbInfo, null);
 ```
 2. 具体使用
 - 新增单个实体
@@ -181,7 +192,6 @@ indi.cyh.jdbctool.config.DbConfig
                 db.rollbackTransaction(transactionId);
             }
 ```
-
 ......待更新
 
 
