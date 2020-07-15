@@ -1,7 +1,15 @@
 # JdbcTool
 
 #### 介绍
-工具依靠spring-jdbc的多源操作数据库工具结合springboot使用
+工具依靠spring-jdbc的多源操作数据库工具
+
+#### 特性
+
+- 支持动态加载数据池
+- 多数据源
+- 多种数据库连接(mysql、Oracle、postgres)
+- 支持分页
+
 
 #### 使用说明
 目前有三种方式生成数据源
@@ -27,10 +35,10 @@
 @Autowired
     private DbConfig config;
     DbInfo dbInfo = new DbInfo() {{
-                setConnectStr("jdbc:mysql://106.52.167.158:3306/singlewood");
+                setConnectStr("jdbc:mysql://*:3306/singlewood");
                 setDriverClassName("com.mysql.cj.jdbc.Driver");
-                setLogoinName("root");
-                setPwd("cyh123321");
+                setLogoinName("*");
+                setPwd("*");
             }};
             JdbcDataBase db = new JdbcDataBase(dbInfo, config);
 ```
