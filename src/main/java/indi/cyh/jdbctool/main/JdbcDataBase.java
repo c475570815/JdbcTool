@@ -248,6 +248,12 @@ public class JdbcDataBase {
         dataSource.setUrl(dbInfo.getConnectStr());
         dataSource.setUsername(dbInfo.getLogoinName());
         dataSource.setPassword(dbInfo.getPwd());
+        //监控设置
+        try {
+            dataSource.setFilters("stat,wall,log4j2");
+        }catch (Exception e){
+
+        }
         //配置初始化大小、最小、最大
         dataSource.setInitialSize(10);
         dataSource.setMinIdle(10);
