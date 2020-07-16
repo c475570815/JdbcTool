@@ -18,6 +18,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
+import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -34,20 +35,6 @@ import java.util.regex.Pattern;
  */
 public class JdbcDataBase {
 
-    //配置文件相关参数
-    private static final String DEFAULT_CONFIG_NAME = "application.yml";
-    private static final String MAIN_DB_URL_PATH = "spring.datasource.url";
-    private static final String MAIN_DB_URL_USERNAME_PATH = "spring.datasource.username";
-    private static final String MAIN_DB_URL_PWD_PATH = "spring.datasource.password";
-    private static final String MAIN_DB_URL_DRIVER_PATH = "spring.datasource.driver-class-name";
-
-    private static final String JDBC_URL_MODE = "db-config.defalut-config-list";
-    private static final String IS_DEBUGGER = "db-config.debugger";
-
-    //jdbc连接生成相关参数
-    private static final String IP = "{{IP}}";
-    private static final String PORT = "{{PORT}}";
-    private static final String END_PARAM = "{{END_PARAM}}";
 
     //sql 匹配相应参数
     private static final Pattern selectPattern;
@@ -57,38 +44,12 @@ public class JdbcDataBase {
     private static final Pattern PATTERN_DISTINCT;
     private static final Pattern rxOrderBy;
 
-    //静态控制锁
-    private static final ReentrantReadWriteLock rrwl = new ReentrantReadWriteLock();
-    private static final ReentrantReadWriteLock.ReadLock rl;
-    private static final ReentrantReadWriteLock.WriteLock wl;
-
-    /**
-     * 静态连接池
-     */
-    private static Map<DbInfo, DruidDataSource> listDbSource = new LinkedHashMap<>();
-
     ////事务相关
     private static final TransactionDefinition definition;
     private final DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
     private final LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
-    /**
-     * 默认主配数据库
-     */
-    private static DruidDataSource mianDataSource;
-    /**
-     * 配置文件对象
-     */
-    private static Properties properties;
-
-    /**
-     * 配置文件读取的默认配置
-     */
-    private static DbConfig defaultConfig;
 
     static {
-        //锁赋值
-        rl = rrwl.readLock();
-        wl = rrwl.writeLock();
         //sql 匹配相应参数 赋值
         selectPattern = Pattern.compile("\\s*(SELECT|EXECUTE|CALL)\\s", 78);
         fromPattern = Pattern.compile("\\s*FROM\\s", 74);
@@ -124,22 +85,6 @@ public class JdbcDataBase {
             }
         };
 
-        //获取配置文件对象
-        YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
-        yaml.setResources(new ClassPathResource(DEFAULT_CONFIG_NAME));
-        properties = yaml.getObject();
-        //加载默认主配
-        try {
-            DbInfo entity = new DbInfo();
-            if (properties.get(MAIN_DB_URL_PATH) != null) {
-                loadingMainDbConfig(entity);
-                mianDataSource = getNewDataSource(entity);
-            }else {
-                throw new Exception(DEFAULT_CONFIG_NAME+"中没有配置数据库信息!");
-            }
-        } catch (Exception e) {
-            System.out.println("主数据库加载失败! ---" + e.getMessage());
-        }
     }
 
 
@@ -152,195 +97,23 @@ public class JdbcDataBase {
      */
     DruidDataSource dataSource = null;
 
-
-    /**
-     * defaultConfig  是否非空
-     */
-    private boolean hasConfig;
     /**
      * 从配置文件中获取是否为调试模式
      */
-    private final boolean isDebugger = !hasConfig || defaultConfig.isDebugger();
-
+    private final boolean isDebugger = DataSourceFactory.getIsDebugger();
+    /**
+     * 日志工具
+     *
+     * @param null
+     * @return
+     * @author cyh
+     * 2020/7/16 21:16
+     **/
     private final LogTool log = new LogTool(isDebugger);
 
-    /**
-     * 根据参数初始化 数据源
-     *
-     * @param entity 配置文件读取的默认配置
-     * @param config 对象数据库信息
-     * @author cyh
-     * 2020/5/28 21:54
-     **/
-    public JdbcDataBase(DbInfo entity, DbConfig config) throws Exception {
-        hasConfig = config != null;
-        if (hasConfig) {
-            this.defaultConfig = config;
-            boolean isUserMainDbConfig = entity == null;
-            //使用数据库默认配置  或者 使用实例中给出的相应参数生成数据源
-            if (isUserMainDbConfig) {
-                entity = new DbInfo();
-                //加载默认主配
-                loadingMainDbConfig(entity);
-            } else if (StringUtils.isNotEmpty(entity.getDbType()) && StringUtils.isEmpty(entity.getConnectStr())) {
-                //把配置结合参数转换未实体类
-                setDbInfo(entity);
-            }
-        }
-        //根据实体生成数据源
-        loadDatabase(entity);
-    }
-
-    private JdbcDataBase() {
-
-    }
-
-    public static JdbcDataBase getMainJdbcDataBase() throws Exception {
-        JdbcDataBase db = new JdbcDataBase();
-        db.dataSource = mianDataSource;
-        db.transactionManager.setDataSource(db.dataSource);
-        return db;
-    }
-
-    /**
-     * 加载默认主配
-     *
-     * @param entity 配置文件读取的默认配置
-     * @return void
-     * @author cyh
-     * 2020/5/28 21:55
-     **/
-    private static void loadingMainDbConfig(DbInfo entity) {
-        entity.setConnectStr(String.valueOf(properties.get(MAIN_DB_URL_PATH)));
-        entity.setLogoinName(String.valueOf(properties.get(MAIN_DB_URL_USERNAME_PATH)));
-        entity.setPwd(String.valueOf(properties.get(MAIN_DB_URL_PWD_PATH)));
-        entity.setDriverClassName(String.valueOf(properties.get(MAIN_DB_URL_DRIVER_PATH)));
-    }
-
-    /**
-     * 生成一个数据源
-     *
-     * @param dbInfo 数据源信息
-     * @return void
-     * @author cyh
-     * 2020/5/28 21:58
-     **/
-    private void loadDatabase(DbInfo dbInfo) {
-        this.dataSource = getExitDataSource(dbInfo);
-        if (dataSource == null) {
-            dataSource = getNewDataSource(dbInfo);
-        }
-        transactionManager.setDataSource(this.dataSource);
-    }
-
-    /**
-     * 生成新的连接池
-     *
-     * @param dbInfo
-     * @return void
-     * @author CYH
-     * @date 2020/7/10 0010 15:49
-     **/
-    private static DruidDataSource getNewDataSource(DbInfo dbInfo) {
-        System.out.println("新增连接池-连接:  " + dbInfo.getConnectStr());
-        DruidDataSource dataSource = new DruidDataSource();
-        dataSource.setDriverClassName(dbInfo.getDriverClassName());
-        dataSource.setUrl(dbInfo.getConnectStr());
-        dataSource.setUsername(dbInfo.getLogoinName());
-        dataSource.setPassword(dbInfo.getPwd());
-        //监控设置
-        try {
-            dataSource.setFilters("stat,wall,log4j2");
-        }catch (Exception e){
-
-        }
-        //配置初始化大小、最小、最大
-        dataSource.setInitialSize(10);
-        dataSource.setMinIdle(10);
-        //最大活跃数
-        dataSource.setMaxActive(20);
-        //配置从连接池获取连接等待超时的时间
-        dataSource.setMaxWait(10000);
-        //配置间隔多久启动一次DestroyThread，对连接池内的连接才进行一次检测，单位是毫秒。
-        //检测时:1.如果连接空闲并且超过minIdle以外的连接，如果空闲时间超过minEvictableIdleTimeMillis设置的值则直接物理关闭。
-        // 2.在minIdle以内的不处理。
-        dataSource.setTimeBetweenEvictionRunsMillis(600000);
-        // 配置一个连接在池中最大空闲时间，单位是毫秒
-        dataSource.setMinEvictableIdleTimeMillis(300000);
-        //  验证连接语句
-        // dataSource.setValidationQuery(false);
-        //设置从连接池获取连接时是否检查连接有效性，true时，如果连接空闲时间超过minEvictableIdleTimeMillis进行检查，否则不检查;false时，不检查
-        dataSource.setTestWhileIdle(false);
-        //设置从连接池获取连接时是否检查连接有效性，true时，每次都检查;false时，不检查
-        dataSource.setTestOnBorrow(false);
-        // 设置往连接池归还连接时是否检查连接有效性，true时，每次都检查;false时，不检查
-        dataSource.setTestOnReturn(false);
-        //打开PSCache，并且指定每个连接上PSCache的大小，Oracle等支持游标的数据库，打开此开关，会以数量级提升性能，具体查阅PSCache相关资料
-        dataSource.setPoolPreparedStatements(true);
-        //
-        dataSource.setMaxPoolPreparedStatementPerConnectionSize(20);
-        //根据自身业务及事务大小来设置
-        dataSource.setConnectionProperties("oracle.net.CONNECT_TIMEOUT=6000;oracle.jdbc.ReadTimeout=180000");
-        //打开后，增强timeBetweenEvictionRunsMillis的周期性连接检查，minIdle内的空闲连接，每次检查强制验证连接有效性. 参考：https://github.com/alibaba/druid/wiki/KeepAlive_cn
-        dataSource.setKeepAlive(true);
-        // 连接泄露检查，打开removeAbandoned功能 , 连接从连接池借出后，长时间不归还，将触发强制回连接。回收周期随timeBetweenEvictionRunsMillis进行，如果连接为从连接池借出状态，并且未执行任何sql，并且从借出时间起已超过removeAbandonedTimeout时间，则强制归还连接到连接池中。
-        dataSource.setRemoveAbandoned(true);
-
-        dataSource.setRemoveAbandonedTimeout(80);
-
-        listDbSource.put(dbInfo, dataSource);
-
-        System.out.println("目前连接池数量: " + listDbSource.size());
-        return dataSource;
-    }
-
-    /**
-     * 获取已存在的连接池
-     *
-     * @param dbInfo
-     * @return com.alibaba.druid.pool.DruidDataSource
-     * @author CYH
-     * @date 2020/7/10 0010 16:00
-     **/
-    private DruidDataSource getExitDataSource(DbInfo dbInfo) {
-        rl.lock();
-        for (DbInfo info : listDbSource.keySet()) {
-            if (DbInfo.equals(info, dbInfo)) {
-                System.out.println("获取到已有连接池:" + info.getConnectStr());
-                System.out.println("目前连接池数量: " + listDbSource.size());
-                return listDbSource.get(info);
-            }
-        }
-        rl.unlock();
-        return null;
-
-    }
-
-    /**
-     * 加载给出的数据源信息
-     *
-     * @param entity 配置文件读取的默认配置
-     * @return void
-     * @author cyh
-     * 2020/5/28 21:57
-     **/
-    private void setDbInfo(DbInfo entity) throws Exception {
-        List<DbInfo> defalutConfigList = defaultConfig.getDefalutConfigList();
-        if (defalutConfigList == null) {
-            throw new Exception("未读取到连接串模板配置!");
-        }
-        for (DbInfo config : defalutConfigList) {
-            if (entity.getDbType().equals(config.getDbType())) {
-                entity.setConnectStr(getDbConnectUrl(config, entity));
-                entity.setDriverClassName(config.getDriverClassName());
-                entity.setUrlTemplate(config.getUrlTemplate());
-                if (StringUtils.isEmpty(entity.getIp())) {
-                    entity.setIp(config.getIp());
-                }
-                return;
-            }
-        }
-        throw new Exception("不支持的数据源类型!");
+    public JdbcDataBase(DruidDataSource dataSource) {
+        this.dataSource = dataSource;
+        transactionManager.setDataSource(dataSource);
     }
 
     /**
@@ -354,28 +127,6 @@ public class JdbcDataBase {
         JdbcTemplate template = new JdbcTemplate();
         template.setDataSource(this.dataSource);
         return template;
-    }
-
-    /**
-     * 根据db信息生成对应的jdbc链接
-     *
-     * @param config
-     * @param entity
-     * @return java.lang.String
-     * @author cyh
-     * 2020/5/28 21:59
-     **/
-    private String getDbConnectUrl(DbInfo config, DbInfo entity) {
-        String urlTemplate = "";
-        if (StringUtils.isEmpty(entity.getConnectStr())) {
-            urlTemplate = config.getUrlTemplate();
-            urlTemplate = urlTemplate.replace(IP, entity.getIp());
-            urlTemplate = urlTemplate.replace(PORT, String.valueOf(entity.getPort()));
-            urlTemplate = urlTemplate.replace(END_PARAM, entity.getEndParam());
-        } else {
-            urlTemplate = entity.getConnectStr();
-        }
-        return urlTemplate;
     }
 
     /**
