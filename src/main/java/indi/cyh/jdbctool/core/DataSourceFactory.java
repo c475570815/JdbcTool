@@ -112,11 +112,15 @@ public class DataSourceFactory {
      * @author cyh
      * 2020/7/16 21:49
      **/
-    public static void addDbTmplate(DbTemplate template) {
-        boolean isExist = defaultUrlTemplateMap.keySet().contains(template.getDbType());
-        defaultUrlTemplateMap.put(template.getDbType(), template);
-        if (isExist) {
-            System.out.println(template.getDbType() + "模板配置已被覆盖!");
+    public static void addDbTmplate(DbTemplate template) throws Exception {
+        if (template.getUrlTemplate().contains(IP) && template.getUrlTemplate().contains(PORT) && template.getUrlTemplate().contains(END_PARAM)) {
+            boolean isExist = defaultUrlTemplateMap.keySet().contains(template.getDbType());
+            defaultUrlTemplateMap.put(template.getDbType(), template);
+            if (isExist) {
+                System.out.println(template.getDbType() + "模板配置已被覆盖!");
+            }
+        } else {
+            throw new Exception("模板必须包含{{IP}}、{{PORT}}、{{END_PARAM}}");
         }
     }
 

@@ -5,54 +5,14 @@
 
 #### 特性
 
-- 支持动态加载数据池
+- 动态加载数据池
 - 多数据源
-- 多种数据库连接(mysql、Oracle、postgres)
-- 支持分页
+- 支持主流关系型数据库数据库(默认mysql、Oracle、postgres,可根据自身需求添加jdbcConnection模板)
+- 分页查询
 - 集成duird(若有需要可在项目中添加druid监控页面配置)
 
 
 #### 使用说明
-目前有三种方式生成数据源
-   1.  在配置文件中配置不同类型的jdbcConnection模板,通过DbConfig实体类给出相关参数生成数据源
-
-```
-@Autowired
-    private DbConfig config;
-    DbInfo dbInfo = new DbInfo() {{
-            setDbType("mysql");
-            setIp("*.*.*.*");
-            setPort(3306);
-            setLogoinName("***");
-            setPwd("***");
-            setEndParam("singlewood");
-        }};
-    JdbcDataBase db = new JdbcDataBase(dbInfo, config);
-```
-
-   2.  动态注入数据库连接串和使用的数据库驱动生成数据源(DbConfig 参数可为null)
-
-```
-@Autowired
-    private DbConfig config;
-    DbInfo dbInfo = new DbInfo() {{
-                setConnectStr("jdbc:mysql://*:3306/singlewood");
-                setDriverClassName("com.mysql.cj.jdbc.Driver");
-                setLogoinName("*");
-                setPwd("*");
-            }};
-            JdbcDataBase db = new JdbcDataBase(dbInfo, config);
-```
-
-
-   3.  在实例化JdbcDataBase时,传入DbInfo为null则以配置文件中主数据库配置(spring.datasource)参数来生成数据源(DbConfig 参数可为null)
-
-```
-@Autowired
-    private DbConfig config;
-    JdbcDataBase db = new JdbcDataBase(null, config);
-```
-
 - 主数据库配置示例
 
 ```
@@ -73,27 +33,13 @@ spring:
 
 
 
-- 其他类型数据库配置(config-file-name参数用于寻找主配文件)
+- jdbcConnection模板示例
 
+必须包含{{IP}}、{{PORT}}、{{END_PARAM}}作为生成jdbcConnection的占位符
 ```
-db-config:
-  # 配置生成connectStr模板
-  defalut-config-list:
-    - {db-type: mysql,driver-class-name: com.mysql.cj.jdbc.Driver, port: 3306, url-template: 'jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}'}
-    - {db-type: oracle,driver-class-name: oracle.jdbc.driver.OracleDriver, port: 1521, url-template: 'jdbc:oracle:thin:@{{IP}}:{{PORT}}/{{END_PARAM}}'}
-    - {db-type: postgres,driver-class-name: org.postgresql.Driver, port: 3306, url-template: 'jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}'}
-  # 指定读取其他配置文件  默认为 application.yml
-  config-file-name: application.yml
-  # 是否为调试模式 默认为true
-  debugger: false
+jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}
 ```
 
-- 作为jar包被其他项目依赖时在classpath下META-INF/spring.factories 加入以下内容
-
-```
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-indi.cyh.jdbctool.config.DbConfig
-```
 ### 使用示例
 1. 初始化数据连接
 
