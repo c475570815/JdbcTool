@@ -98,28 +98,41 @@ indi.cyh.jdbctool.config.DbConfig
 1. 初始化数据连接
 
 ```
-    //手动注入配置(这里DbConfig 也可以不使用bean)
-    @Autowired
-    private DbConfig config;
-    DbInfo dbInfo = new DbInfo() {{
-            setDbType("mysql");
-            setIp("*.*.*.*");
-            setPort(3306);
-            setLogoinName("***");
-            setPwd("***");
-            setEndParam("singlewood");
-        }};
-    JdbcDataBase db = new JdbcDataBase(dbInfo, config);
-    //使用application.yml数据库配置
-    JdbcDataBase db = JdbcDataBase.getMainJdbcDataBase();
-    //直接使用连接(不用配置) 
-    DbInfo dbInfo = new DbInfo() {{
-        setConnectStr("jdbc:mysql://*:3306/singlewood");
-        setDriverClassName("com.mysql.cj.jdbc.Driver");
-        setLogoinName("*");
-        setPwd("*");
-    }};
-    JdbcDataBase db = new JdbcDataBase(dbInfo, null);
+            //1.使用默认主配
+             JdbcDataBase db = DataSourceFactory.getMianDb();
+
+            //2.给出必要参数 依赖默认模板生成
+            JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
+                setDbType("mysql");
+                setPort(3306);
+                setLogoinName("root");
+                setPwd("cyh123321");
+                setIp("106.52.167.158");
+                setEndParam("singlewood");
+            }});
+
+           // 3.给出url  不依赖模板
+            JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
+                setConnectStr("jdbc:mysql://106.52.167.158:3306/singlewood");
+                setLogoinName("root");
+                setPwd("cyh123321");
+            }});
+
+           // 4.给出新模板 依赖模板生成
+            DataSourceFactory.addDbTmplate(new DbTemplate(){{
+                setUrlTemplate("jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}");
+                setPort(3306);
+                setDriverClassName("com.mysql.cj.jdbc.Driver");
+                setDbType("mysql-t");
+            }});
+            JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
+                setDbType("mysql-t");
+                setPort(3306);
+                setLogoinName("root");
+                setPwd("cyh123321");
+                setIp("106.52.167.158");
+                setEndParam("singlewood");
+            }});
 ```
 2. 具体使用
 - 新增单个实体
