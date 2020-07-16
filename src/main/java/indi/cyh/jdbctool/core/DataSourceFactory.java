@@ -1,4 +1,4 @@
-package indi.cyh.jdbctool.main;
+package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import indi.cyh.jdbctool.modle.DbInfo;
@@ -54,6 +54,8 @@ public class DataSourceFactory {
 
     private static final Map<String, DbTemplate> defaultUrlTemplateMap = new LinkedHashMap<>();
 
+    private static boolean debugger;
+
 
     static {
         //锁赋值
@@ -67,6 +69,7 @@ public class DataSourceFactory {
         loadMainDbConfig();
         //配置默认jdbc-url模板
         loadDefaultUrlTemplate();
+        debugger = properties.get("debugger") == null || properties.get("debugger").toString().equals("false");
     }
 
     /**
@@ -147,7 +150,6 @@ public class DataSourceFactory {
      * 获取db操作实体
      *
      * @param entity
-     * @param config
      * @return indi.cyh.jdbctool.main.JdbcDataBase
      * @author cyh
      * 2020/7/16 21:46
@@ -279,6 +281,7 @@ public class DataSourceFactory {
         dataSource.setUrl(dbInfo.getConnectStr());
         dataSource.setUsername(dbInfo.getLogoinName());
         dataSource.setPassword(dbInfo.getPwd());
+        dataSource.setName(dbInfo.getDbType() + "-" + dbInfo.getIp() + "-" + dbInfo.getLogoinName());
         //监控设置
         try {
             dataSource.setFilters("stat,wall,log4j2");
@@ -334,6 +337,10 @@ public class DataSourceFactory {
      * 2020/7/16 21:14
      **/
     public static boolean getIsDebugger() {
-        return properties.get("debugger") == null || properties.get("debugger").toString().equals("false");
+        return debugger;
+    }
+
+    public static void setDebugger(boolean isDebugger) {
+        debugger = isDebugger;
     }
 }

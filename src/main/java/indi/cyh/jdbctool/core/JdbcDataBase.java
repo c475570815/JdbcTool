@@ -1,7 +1,6 @@
-package indi.cyh.jdbctool.main;
+package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
-import indi.cyh.jdbctool.config.DbConfig;
 import indi.cyh.jdbctool.entity.BsDiary;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
@@ -9,8 +8,6 @@ import indi.cyh.jdbctool.tool.EntityTool;
 import indi.cyh.jdbctool.tool.LogTool;
 import indi.cyh.jdbctool.tool.StringTool;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -18,12 +15,10 @@ import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
