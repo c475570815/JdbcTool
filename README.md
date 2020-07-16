@@ -1,13 +1,13 @@
 # JdbcTool
 
 #### 介绍
-依靠spring-jdbc的动态多源操作数据库工具
+依靠spring-jdbc的动态多源数据库操作工具
 
 #### 特性
 
+- 支持主流关系型数据库数据库(默认mysql、Oracle、postgres,可根据自身需求添加jdbcConnection模板)
 - 动态加载数据池
 - 多数据源
-- 支持主流关系型数据库数据库(默认mysql、Oracle、postgres,可根据自身需求添加jdbcConnection模板)
 - 分页查询
 - 集成duird(若有需要可在项目中添加druid监控页面配置)
 
