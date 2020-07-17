@@ -3,6 +3,7 @@ package indi.cyh.jdbctool.core;
 import com.alibaba.druid.pool.DruidDataSource;
 import indi.cyh.jdbctool.modle.DbInfo;
 import indi.cyh.jdbctool.modle.DbTemplate;
+import indi.cyh.jdbctool.tool.JdbcUrlUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.core.io.ClassPathResource;
@@ -285,7 +286,9 @@ public class DataSourceFactory {
         dataSource.setUrl(dbInfo.getConnectStr());
         dataSource.setUsername(dbInfo.getLogoinName());
         dataSource.setPassword(dbInfo.getPwd());
-        dataSource.setName(dbInfo.getDbType() + "-" + dbInfo.getIp() + "-" + dbInfo.getLogoinName());
+        Map<String, Object> dataInfoMap = JdbcUrlUtil.findDataInfoMapByUrl(dbInfo.getConnectStr());
+        dataSource.setName(dataInfoMap.get("type") + "-" + dataInfoMap.get("ip") + "-" + dbInfo.getLogoinName());
+        dataSource.setDbType(dataInfoMap.get("type").toString());
         //监控设置
         try {
             dataSource.setFilters("stat,wall,log4j2");
