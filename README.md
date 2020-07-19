@@ -74,9 +74,9 @@ jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}
             JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
                 setDbType("mysql-t");
                 setPort(3306);
-                setLogoinName("root");
-                setPwd("cyh123321");
-                setIp("106.52.167.158");
+                setLogoinName("***");
+                setPwd("***");
+                setIp("***");
                 setEndParam("singlewood");
             }});
 ```
