@@ -23,7 +23,7 @@ spring:
     password: singlewood
     driver-class-name: com.mysql.cj.jdbc.Driver
 ```
-若不想配置默认库可以在入口使用注解
+若不想配置默认库可以在入口使用注解(结合spring-boot使用时)
 
 ```
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class,
