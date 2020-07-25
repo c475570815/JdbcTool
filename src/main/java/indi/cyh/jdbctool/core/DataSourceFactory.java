@@ -52,9 +52,13 @@ public class DataSourceFactory {
      * 静态连接池
      */
     private static final Map<DbInfo, DruidDataSource> listDbSource = new LinkedHashMap<>();
-
+    /**
+     * 默认模板存放
+     */
     private static final Map<String, DbTemplate> defaultUrlTemplateMap = new LinkedHashMap<>();
-
+    /**
+     * 是否是调试模式
+     */
     private static boolean debugger;
 
 
@@ -114,14 +118,21 @@ public class DataSourceFactory {
      * 2020/7/16 21:49
      **/
     public static void addDbTmplate(DbTemplate template) throws Exception {
-        if (template.getUrlTemplate().contains(IP) && template.getUrlTemplate().contains(PORT) && template.getUrlTemplate().contains(END_PARAM)) {
-            boolean isExist = defaultUrlTemplateMap.keySet().contains(template.getDbType());
-            defaultUrlTemplateMap.put(template.getDbType(), template);
-            if (isExist) {
-                System.out.println(template.getDbType() + "模板配置已被覆盖!");
+        wl.lock();
+        try {
+            if (template.getUrlTemplate().contains(IP) && template.getUrlTemplate().contains(PORT) && template.getUrlTemplate().contains(END_PARAM)) {
+                boolean isExist = defaultUrlTemplateMap.keySet().contains(template.getDbType());
+                defaultUrlTemplateMap.put(template.getDbType(), template);
+                if (isExist) {
+                    System.out.println(template.getDbType() + "模板配置已被覆盖!");
+                }
+            } else {
+                throw new Exception("模板必须包含{{IP}}、{{PORT}}、{{END_PARAM}}");
             }
-        } else {
-            throw new Exception("模板必须包含{{IP}}、{{PORT}}、{{END_PARAM}}");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            wl.unlock();
         }
     }
 
@@ -188,14 +199,19 @@ public class DataSourceFactory {
      **/
     private static DruidDataSource getExitDataSource(DbInfo dbInfo) {
         rl.lock();
-        for (DbInfo info : listDbSource.keySet()) {
-            if (DbInfo.equals(info, dbInfo)) {
-                System.out.println("获取到已有连接池:" + info.getConnectStr());
-                System.out.println("目前连接池数量: " + listDbSource.size());
-                return listDbSource.get(info);
+        try {
+            for (DbInfo info : listDbSource.keySet()) {
+                if (DbInfo.equals(info, dbInfo)) {
+                    System.out.println("获取到已有连接池:" + info.getConnectStr());
+                    System.out.println("目前连接池数量: " + listDbSource.size());
+                    return listDbSource.get(info);
+                }
             }
+        } catch (Exception e) {
+            System.out.println("获取已有连接池时异常: " + e.getMessage());
+        } finally {
+            rl.unlock();
         }
-        rl.unlock();
         return null;
     }
 
@@ -267,6 +283,7 @@ public class DataSourceFactory {
                 throw new Exception(DEFAULT_CONFIG_NAME + "中没有配置数据库信息!");
             }
         } catch (Exception e) {
+            e.printStackTrace();
             System.out.println("主数据库加载失败! ---" + e.getMessage());
         }
     }
@@ -286,9 +303,13 @@ public class DataSourceFactory {
         dataSource.setUrl(dbInfo.getConnectStr());
         dataSource.setUsername(dbInfo.getLogoinName());
         dataSource.setPassword(dbInfo.getPwd());
-        Map<String, Object> dataInfoMap = JdbcUrlUtil.findDataInfoMapByUrl(dbInfo.getConnectStr());
-        dataSource.setName(dataInfoMap.get("type") + "-" + dataInfoMap.get("ip") + "-" + dbInfo.getLogoinName());
-        dataSource.setDbType(dataInfoMap.get("type").toString());
+        try {
+            Map<String, Object> dataInfoMap = JdbcUrlUtil.findDataInfoMapByUrl(dbInfo.getConnectStr());
+            dataSource.setName(dataInfoMap.get("type") + "-" + dataInfoMap.get("ip") + "-" + dbInfo.getLogoinName());
+            dataSource.setDbType(dataInfoMap.get("type").toString());
+        } catch (Exception e) {
+
+        }
         //监控设置
         try {
             dataSource.setFilters("stat,wall,log4j2");
@@ -328,9 +349,16 @@ public class DataSourceFactory {
         dataSource.setRemoveAbandoned(true);
 
         dataSource.setRemoveAbandonedTimeout(80);
-
-        listDbSource.put(dbInfo, dataSource);
-
+        wl.lock();
+        try {
+            listDbSource.put(dbInfo, dataSource);
+        } catch (Exception e) {
+            System.out.println("生成新连接池时异常: " + e.getMessage());
+            dataSource.close();
+            listDbSource.remove(dbInfo);
+        } finally {
+            wl.unlock();
+        }
         System.out.println("目前连接池数量: " + listDbSource.size());
         return dataSource;
     }
