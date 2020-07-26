@@ -32,12 +32,89 @@ spring:
 ```
 
 
-
 - jdbcConnection模板示例
 
 必须包含{{IP}}、{{PORT}}、{{END_PARAM}}作为生成jdbcConnection的占位符
 ```
 jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}
+```
+
+
+
+- 实体类示例
+
+必须包含{{IP}}、{{PORT}}、{{END_PARAM}}作为生成jdbcConnection的占位符
+```
+@TableName("ST_PARM")
+@PrimaryField("PARM_ID")
+public class StParm implements Serializable {
+
+    /**
+     * 参数编号
+     */
+    @FieldColumn("PARM_ID")
+    private String parmId;
+    /**
+     * 参数分类
+     */
+    @FieldColumn("CATEGORY")
+    private String category;
+    /**
+     * 参数名称
+     */
+    @FieldColumn("NAME")
+    private String name;
+    /**
+     * 参数默认值
+     */
+    @FieldColumn("DEFAULT_VALUE")
+    private String defaultValue;
+    /**
+     * 参数当前值
+     */
+    @FieldColumn("NOW_VALUE")
+    private String nowValue;
+    /**
+     * 参数运行值
+     */
+    @FieldColumn("RUN_VALUE")
+    private String runValue;
+    /**
+     * 参数最小值
+     */
+    @FieldColumn("MIN_VALUE")
+    private String minValue;
+    /**
+     * 参数最大值
+     */
+    @FieldColumn("MAX_VALUE")
+    private String maxValue;
+    /**
+     * 参数格式
+     */
+    @FieldColumn("FORMAT")
+    private String format;
+    /**
+     * 备注
+     */
+    @FieldColumn("NOTE")
+    private String note;
+    /**
+     * 使用标志
+     */
+    @FieldColumn("STATE")
+    private String state;
+    /**
+     * 排序
+     */
+    @FieldColumn("IDX")
+    private String idx;
+    /**
+     * 系统编号
+     */
+    @FieldColumn("MIS_ID")
+    private String misId;
+}
 ```
 
 ### 使用示例
@@ -81,7 +158,7 @@ jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}
             }});
 ```
 2. 具体使用
-- 新增单个实体
+- 新增单个实体(配合带本工具注解的实体类使用)
 
 ```
             db.insert(BsDiary.class,new BsDiary(){{
@@ -90,12 +167,12 @@ jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}
             }});
             
 ```
-- 关联id单个删除
+- 关联id单个删除(配合带本工具注解的实体类使用)
 
 ```
             db.delectbyId(BsDiary.class,"1");
 ```
-- 关联id多个删除
+- 关联id多个删除(配合带本工具注解的实体类使用)
 ```
             db.delectbyIds(BsDiary.class, new ArrayList<>() {{
                 add("1");
@@ -113,12 +190,12 @@ jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}
 ```
             db.querySingleTypeList("select  head  from bs_diary ",String.class);
 ```
-- 单一实体数据查询
+- 单一实体数据查询(配合带本工具注解的实体类使用)
 
 ```
             db.queryOneRow("select  * from bs_diary  where d_diaryId=?",BsDiary.class,"42");
 ```
-- 多行实体数据查询
+- 多行实体数据查询(配合带本工具注解的实体类使用)
 
 ```
             db.queryList("select  *  from bs_diary ",BsDiary.class);
