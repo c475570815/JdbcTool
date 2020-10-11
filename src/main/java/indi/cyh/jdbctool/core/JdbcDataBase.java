@@ -9,13 +9,18 @@ import indi.cyh.jdbctool.tool.LogTool;
 import indi.cyh.jdbctool.tool.StringTool;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -364,8 +369,9 @@ public class JdbcDataBase {
      * @author CYH
      * @date 2020/5/29 0029 15:44
      **/
-    public <T> void insert(Class<T> requiredType, T t) throws NoSuchFieldException, IllegalAccessException {
+    public <T> Object insert(Class<T> requiredType, T t, boolean returnIntPrimary) throws NoSuchFieldException, IllegalAccessException {
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
+        //语句拼接
         StringBuilder insertSqlBuilder = new StringBuilder("INSERT INTO ");
         insertSqlBuilder.append(EntityTool.getTabelName(requiredType));
         insertSqlBuilder.append("(");
@@ -389,7 +395,28 @@ public class JdbcDataBase {
         insertSqlBuilder.append(")");
         String sql = insertSqlBuilder.toString();
         Object[] params = valueList.toArray();
-        executeDMLSql(sql, params);
+        if (returnIntPrimary) {
+            //返回主键预处理
+            JdbcTemplate template = getJdbcTemplate();
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+            template.update(new PreparedStatementCreator() {
+                @Override
+                public PreparedStatement createPreparedStatement(Connection conn)
+                        throws SQLException {
+                    // 预处理 注意参数 PreparedStatement.RETURN_GENERATED_KEYS
+                    PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+                    for (int i = 0; i < params.length; i++) {
+                        ps.setObject((i+1), params[i]);
+                    }
+                    return ps;
+                }
+            }, keyHolder);
+            log.printLog(sql, dataSource.getRawJdbcUrl(), params);
+            return keyHolder.getKey().intValue();
+        } else {
+            executeDMLSql(sql, params);
+            return null;
+        }
     }
 
     /**

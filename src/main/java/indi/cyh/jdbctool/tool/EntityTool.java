@@ -95,8 +95,10 @@ public class EntityTool {
             return null;
         }
     }
+
     /**
      * 获取类型的字段名
+     *
      * @param type
      * @return java.util.List<java.lang.String>
      * @author cyh
