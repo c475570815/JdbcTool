@@ -1,37 +1,15 @@
-package indi.cyh.jdbctool.event;
+package indi.cyh.jdbctool;
+
+import indi.cyh.jdbctool.core.DataSourceFactory;
+import indi.cyh.jdbctool.core.JdbcDataBase;
 
 
-import indi.cyh.jdbctool.entity.BsDiary;
-import indi.cyh.jdbctool.entity.StParm;
-import indi.cyh.jdbctool.modle.DbInfo;
-import indi.cyh.jdbctool.main.JdbcDateBase;
-import indi.cyh.jdbctool.modle.DbConfig;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.event.ApplicationStartedEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-/**
- * spring boot 配置环境事件监听
- */
-@Component
-public class EnvironmentPreparedEvent implements ApplicationListener<ApplicationStartedEvent> {
-
-    @Autowired
-    private DbConfig config;
-
-    @Override
-    public void onApplicationEvent(ApplicationStartedEvent applicationStartedEvent) {
+public class StartApplication {
+    public static void main(String[] args) {
         try {
-            JdbcDateBase db = new JdbcDateBase(null, config);
-//           // 新增单个实体
-//            db.insert(BsDiary.class,new BsDiary(){{
-//                setDHead("head");
-//            }});
+            JdbcDataBase db = DataSourceFactory.getMianDb();
+            String sql = "select d_head from bs_diary\n";
+            System.out.println(String.join(",", db.querySingleTypeList(sql, String.class)));
 //          //  关联id单个删除
 //            db.delectbyId(BsDiary.class,"1");
 //           // 关联id多个删除
@@ -61,5 +39,5 @@ public class EnvironmentPreparedEvent implements ApplicationListener<Application
             ex.printStackTrace();
         }
     }
-
 }
+

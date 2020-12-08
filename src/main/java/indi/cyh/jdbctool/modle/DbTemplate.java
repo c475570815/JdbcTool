@@ -7,17 +7,17 @@ package indi.cyh.jdbctool.modle;
  * @Date 2020/7/16 21:39
  */
 public class DbTemplate {
-    String urlTemplate;
+    String jdbcTemplate;
     String driverClassName;
     int port;
-    String dbType;
+    String type;
 
-    public String getUrlTemplate() {
-        return urlTemplate;
+    public String getJdbcTemplate() {
+        return jdbcTemplate;
     }
 
-    public void setUrlTemplate(String urlTemplate) {
-        this.urlTemplate = urlTemplate;
+    public void setJdbcTemplate(String jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public String getDriverClassName() {
@@ -36,11 +36,11 @@ public class DbTemplate {
         this.port = port;
     }
 
-    public String getDbType() {
-        return dbType;
+    public String getType() {
+        return type;
     }
 
-    public void setDbType(String dbType) {
-        this.dbType = dbType;
+    public void setType(String type) {
+        this.type = type;
     }
 }

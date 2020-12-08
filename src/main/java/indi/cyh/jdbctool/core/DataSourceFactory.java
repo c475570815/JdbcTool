@@ -1,12 +1,11 @@
 package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import indi.cyh.jdbctool.config.DbConfig;
 import indi.cyh.jdbctool.modle.DbInfo;
 import indi.cyh.jdbctool.modle.DbTemplate;
-import indi.cyh.jdbctool.tool.JdbcUrlUtil;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
-import org.springframework.core.io.ClassPathResource;
+import indi.cyh.jdbctool.tool.JdbcUrlTool;
+import indi.cyh.jdbctool.tool.StringTool;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -21,28 +20,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class DataSourceFactory {
 
-    //配置文件相关参数
-    private static final String DEFAULT_CONFIG_NAME = "application.yml";
-    private static final String MAIN_DB_URL_PATH = "spring.datasource.url";
-    private static final String MAIN_DB_URL_USERNAME_PATH = "spring.datasource.username";
-    private static final String MAIN_DB_URL_PWD_PATH = "spring.datasource.password";
-    private static final String MAIN_DB_URL_DRIVER_PATH = "spring.datasource.driver-class-name";
 
-    //jdbc连接生成相关参数
-    private static final String IP = "{{IP}}";
-    private static final String PORT = "{{PORT}}";
-    private static final String END_PARAM = "{{END_PARAM}}";
 
     //静态控制锁
     private static final ReentrantReadWriteLock rrwl = new ReentrantReadWriteLock();
+
     private static final ReentrantReadWriteLock.ReadLock rl;
     private static final ReentrantReadWriteLock.WriteLock wl;
-
-    /**
-     * 配置文件对象
-     */
-    private static final Properties properties;
-
     /**
      * 默认主配数据库
      */
@@ -52,89 +36,15 @@ public class DataSourceFactory {
      * 静态连接池
      */
     private static final Map<DbInfo, DruidDataSource> listDbSource = new LinkedHashMap<>();
-    /**
-     * 默认模板存放
-     */
-    private static final Map<String, DbTemplate> defaultUrlTemplateMap = new LinkedHashMap<>();
-    /**
-     * 是否是调试模式
-     */
-    private static boolean debugger;
 
 
     static {
         //锁赋值
         rl = rrwl.readLock();
         wl = rrwl.writeLock();
-        //获取配置文件对象
-        YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
-        yaml.setResources(new ClassPathResource(DEFAULT_CONFIG_NAME));
-        properties = yaml.getObject();
-        //加载默认主配
-        loadMainDbConfig();
-        //配置默认jdbc-url模板
-        loadDefaultUrlTemplate();
-        debugger = properties.get("debugger") == null || properties.get("debugger").toString().equals("false");
+        DbConfig.loadConfig();
     }
 
-    /**
-     * 配置默认jdbc-url模板
-     *
-     * @param
-     * @return void
-     * @author cyh
-     * 2020/7/16 20:58
-     **/
-    private static void loadDefaultUrlTemplate() {
-        DbTemplate mysql = new DbTemplate() {{
-            setUrlTemplate("jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}");
-            setPort(3306);
-            setDriverClassName("com.mysql.cj.jdbc.Driver");
-            setDbType("mysql");
-        }};
-        DbTemplate oracle = new DbTemplate() {{
-            setUrlTemplate("jdbc:oracle:thin:@{{IP}}:{{PORT}}/{{END_PARAM}}");
-            setPort(1521);
-            setDriverClassName("oracle.jdbc.driver.OracleDriver");
-            setDbType("oracle");
-        }};
-        DbTemplate postgres = new DbTemplate() {{
-            setUrlTemplate("jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}");
-            setPort(5432);
-            setDriverClassName("org.postgresql.Driver");
-            setDbType("postgres");
-        }};
-        defaultUrlTemplateMap.put("mysql", mysql);
-        defaultUrlTemplateMap.put("oracle", oracle);
-        defaultUrlTemplateMap.put("postgres", postgres);
-    }
-
-    /**
-     * 添加模板
-     *
-     * @param
-     * @return void
-     * @author cyh
-     * 2020/7/16 21:49
-     **/
-    public static void addDbTmplate(DbTemplate template) throws Exception {
-        wl.lock();
-        try {
-            if (template.getUrlTemplate().contains(IP) && template.getUrlTemplate().contains(PORT) && template.getUrlTemplate().contains(END_PARAM)) {
-                boolean isExist = defaultUrlTemplateMap.keySet().contains(template.getDbType());
-                defaultUrlTemplateMap.put(template.getDbType(), template);
-                if (isExist) {
-                    System.out.println(template.getDbType() + "模板配置已被覆盖!");
-                }
-            } else {
-                throw new Exception("模板必须包含{{IP}}、{{PORT}}、{{END_PARAM}}");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            wl.unlock();
-        }
-    }
 
     /**
      * 生成一个数据源
@@ -150,7 +60,7 @@ public class DataSourceFactory {
         if (hasTemplate) {
             //使用给出的模板加载db连接实体类
             setDbInfo(entity, config);
-        } else if (StringUtils.isNotEmpty(entity.getDbType()) && StringUtils.isEmpty(entity.getConnectStr())) {
+        } else if (StringTool.isNotEmpty(entity.getType()) && StringTool.isEmpty(entity.getConnectStr())) {
             //把配置结合参数转换为db连接实体类
             setDbInfoByDefaultUrlTemplate(entity);
         }
@@ -165,15 +75,14 @@ public class DataSourceFactory {
     /**
      * 获取db操作实体
      *
-     * @param entity
+     * @param entity 数据库信息
      * @return indi.cyh.jdbctool.main.JdbcDataBase
      * @author cyh
      * 2020/7/16 21:46
      **/
     public static JdbcDataBase getDb(DbInfo entity) throws Exception {
         DruidDataSource source = getDataSource(entity, null);
-        JdbcDataBase db = new JdbcDataBase(source);
-        return db;
+        return new JdbcDataBase(source);
     }
 
     /**
@@ -185,8 +94,7 @@ public class DataSourceFactory {
      * 2020/7/16 21:13
      **/
     public static JdbcDataBase getMianDb() {
-        JdbcDataBase db = new JdbcDataBase(mianDataSource);
-        return db;
+        return new JdbcDataBase(mianDataSource);
     }
 
     /**
@@ -224,8 +132,8 @@ public class DataSourceFactory {
      * 2020/5/28 21:57
      **/
     private static void setDbInfoByDefaultUrlTemplate(DbInfo entity) throws Exception {
-        for (DbTemplate config : defaultUrlTemplateMap.values()) {
-            if (entity.getDbType().equals(config.getDbType())) {
+        for (DbTemplate config : DbConfig.getDefaultUrlTemplateMap().values()) {
+            if (entity.getType().equals(config.getType())) {
                 setDbInfo(entity, config);
                 return;
             }
@@ -252,11 +160,11 @@ public class DataSourceFactory {
      **/
     private static String getDbConnectUrl(DbTemplate config, DbInfo entity) {
         String urlTemplate = "";
-        if (StringUtils.isEmpty(entity.getConnectStr())) {
-            urlTemplate = config.getUrlTemplate();
-            urlTemplate = urlTemplate.replace(IP, entity.getIp());
-            urlTemplate = urlTemplate.replace(PORT, String.valueOf(entity.getPort()));
-            urlTemplate = urlTemplate.replace(END_PARAM, entity.getEndParam());
+        if (StringTool.isEmpty(entity.getConnectStr())) {
+            urlTemplate = config.getJdbcTemplate();
+            urlTemplate = urlTemplate.replace(DbConfig.IP, entity.getIp());
+            urlTemplate = urlTemplate.replace(DbConfig.PORT, String.valueOf(entity.getPort()));
+            urlTemplate = urlTemplate.replace(DbConfig.END_PARAM, entity.getEndParam());
         } else {
             urlTemplate = entity.getConnectStr();
         }
@@ -270,17 +178,16 @@ public class DataSourceFactory {
      * @author cyh
      * 2020/5/28 21:55
      **/
-    private static void loadMainDbConfig() {
+    public static void loadMainDbConfig() {
         try {
             DbInfo entity = new DbInfo();
-            if (properties.get(MAIN_DB_URL_PATH) != null) {
-                entity.setConnectStr(String.valueOf(properties.get(MAIN_DB_URL_PATH)));
-                entity.setLogoinName(String.valueOf(properties.get(MAIN_DB_URL_USERNAME_PATH)));
-                entity.setPwd(String.valueOf(properties.get(MAIN_DB_URL_PWD_PATH)));
-                entity.setDriverClassName(String.valueOf(properties.get(MAIN_DB_URL_DRIVER_PATH)));
-                mianDataSource = getNewDataSource(entity);
+            List<DbInfo> defalutDatasource = DbConfig.getDefalutDatasource();
+            if (defalutDatasource.size() > 0) {
+                DbInfo mainDb = defalutDatasource.get(0);
+                setDbInfoByDefaultUrlTemplate(mainDb);
+                mianDataSource = getNewDataSource(mainDb);
             } else {
-                throw new Exception(DEFAULT_CONFIG_NAME + "中没有配置数据库信息!");
+                throw new Exception("配置文件中没有配置数据库信息!");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -301,18 +208,19 @@ public class DataSourceFactory {
         DruidDataSource dataSource = new DruidDataSource();
         dataSource.setDriverClassName(dbInfo.getDriverClassName());
         dataSource.setUrl(dbInfo.getConnectStr());
-        dataSource.setUsername(dbInfo.getLogoinName());
+        dataSource.setUsername(dbInfo.getLoginName());
         dataSource.setPassword(dbInfo.getPwd());
         try {
-            Map<String, Object> dataInfoMap = JdbcUrlUtil.findDataInfoMapByUrl(dbInfo.getConnectStr());
-            dataSource.setName(dataInfoMap.get("type") + "-" + dataInfoMap.get("ip") + "-" + dbInfo.getLogoinName());
+            Map<String, Object> dataInfoMap = JdbcUrlTool.findDataInfoMapByUrl(dbInfo.getConnectStr());
+            dataSource.setName(dataInfoMap.get("type") + "-" + dataInfoMap.get("ip") + "-" + dbInfo.getLoginName());
             dataSource.setDbType(dataInfoMap.get("type").toString());
         } catch (Exception e) {
 
         }
         //监控设置
         try {
-            dataSource.setFilters("stat,wall,log4j2");
+            //,log4j2
+            dataSource.setFilters("stat,wall");
         } catch (Exception e) {
 
         }
@@ -361,21 +269,5 @@ public class DataSourceFactory {
         }
         System.out.println("目前连接池数量: " + listDbSource.size());
         return dataSource;
-    }
-
-    /**
-     * 从配置文件获取是否是调试模式
-     *
-     * @param
-     * @return boolean
-     * @author cyh
-     * 2020/7/16 21:14
-     **/
-    public static boolean getIsDebugger() {
-        return debugger;
-    }
-
-    public static void setDebugger(boolean isDebugger) {
-        debugger = isDebugger;
     }
 }

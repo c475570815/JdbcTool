@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * @Author cyh
  * @Date 2020/7/8 0008 14:43
  */
-public class JdbcUrlUtil {
+public class JdbcUrlTool {
     static Pattern patternDbIp = Pattern.compile("(?<=//).*(?=:)");
     static Pattern patternDbType = Pattern.compile("(?<=:).[a-zA-Z]*(?=:)");
     static Pattern patternDbPort = Pattern.compile("(?<=\\d:).*(?=/)");

@@ -1,0 +1,36 @@
+{
+  "isDebugger": true,
+  "dbConfig": {
+    "datasource": [
+      {
+        "sourceName": "mainDb",
+        "type": "mysql",
+        "ip": "106.52.167.158",
+        "port": 3306,
+        "loginName": "singlewood",
+        "pwd":  "singlewood",
+        "endParam": "singlewood?serverTimezone=UTC"
+      }
+    ],
+    "templateList": [
+      {
+        "type": "mysql",
+        "driverClassName": "com.mysql.cj.jdbc.Driver",
+        "port": 3306,
+        "jdbcTemplate": "jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+      },
+      {
+        "type": "oracle",
+        "driverClassName": "oracle.jdbc.driver.OracleDriver",
+        "port": 1521,
+        "jdbcTemplate": "jdbc:oracle:thin:@{{IP}}:{{PORT}}/{{END_PARAM}}"
+      },
+      {
+        "type": "postgres",
+        "driverClassName": "org.postgresql.Driver",
+        "port": 5432,
+        "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+      }
+    ]
+  }
+}

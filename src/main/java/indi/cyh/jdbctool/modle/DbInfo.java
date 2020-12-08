@@ -7,22 +7,22 @@ package indi.cyh.jdbctool.modle;
  * @date 2020/4/11 8:41
  */
 public class DbInfo {
-    String dbType;
+    String type;
     String ip;
     Integer port;
     String endParam;
-    String logoinName;
+    String loginName;
     String pwd;
     String connectStr;
     String driverClassName;
 
 
-    public String getDbType() {
-        return dbType;
+    public String getType() {
+        return type;
     }
 
-    public void setDbType(String dbType) {
-        this.dbType = dbType;
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getConnectStr() {
@@ -57,12 +57,12 @@ public class DbInfo {
         this.endParam = endParam;
     }
 
-    public String getLogoinName() {
-        return logoinName;
+    public String getLoginName() {
+        return loginName;
     }
 
-    public void setLogoinName(String logoinName) {
-        this.logoinName = logoinName;
+    public void setLoginName(String loginName) {
+        this.loginName = loginName;
     }
 
     public String getPwd() {
@@ -82,6 +82,6 @@ public class DbInfo {
     }
 
     public static boolean equals(DbInfo first, DbInfo secend) {
-        return first.getConnectStr().equals(secend.getConnectStr()) && first.getLogoinName().equals(secend.getLogoinName()) && first.getPwd().equals(secend.getPwd());
+        return first.getConnectStr().equals(secend.getConnectStr()) && first.getLoginName().equals(secend.getLoginName()) && first.getPwd().equals(secend.getPwd());
     }
 }

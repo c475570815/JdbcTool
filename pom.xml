@@ -7,7 +7,7 @@
     <groupId>indi.cyh</groupId>
     <artifactId>JdbcTool</artifactId>
     <version>1.0.0</version>
-    <!--    整体文件配置-->
+    <!--整体文件配置-->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -15,32 +15,12 @@
     </properties>
 
     <dependencies>
-        <!-- Spring-boot-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-            <version>2.2.6.RELEASE</version>
-            <scope>provided</scope>
-        </dependency>
-        <!--spring-boot-configuration-processor -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <version>2.2.6.RELEASE</version>
-            <scope>provided</scope>
-        </dependency>
+
+        <!--spring-jdbc-->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
             <version>5.2.7.RELEASE</version>
-        </dependency>
-
-        <!-- JDBC -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <version>2.2.6.RELEASE</version>
-            <scope>provided</scope>
         </dependency>
 
 
@@ -49,6 +29,7 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.19</version>
+<!--            <scope>provided</scope>-->
         </dependency>
 
 
@@ -57,6 +38,7 @@
             <groupId>com.oracle</groupId>
             <artifactId>ojdbc6</artifactId>
             <version>11.2.0.3</version>
+            <scope>provided</scope>
         </dependency>
 
 
@@ -65,23 +47,23 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.2.12</version>
+            <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.9</version>
-        </dependency>
+        <!--集成druid-->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
             <version>1.1.23</version>
         </dependency>
+
+        <!--json解析-->
         <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>3.0.2</version>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.75</version>
         </dependency>
+
     </dependencies>
 
     <build>
@@ -166,9 +148,9 @@
                         <configuration>
                             <type>jar</type>
                             <includeTypes>jar</includeTypes>
-<!--                            <outputDirectory>-->
-<!--                                ${project.build.directory}/lib-->
-<!--                            </outputDirectory>-->
+                            <!--                            <outputDirectory>-->
+                            <!--                                ${project.build.directory}/lib-->
+                            <!--                            </outputDirectory>-->
                         </configuration>
                     </execution>
                 </executions>

@@ -1,7 +1,6 @@
 package indi.cyh.jdbctool.tool;
 
 
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,9 +92,9 @@ public class StringTool {
     public static String getSqlValueStr(String[] arr) {
         List<String> strArr = new ArrayList<>();
         for (int i = 0; i < arr.length; i++) {
-            strArr.add("'" + arr[i].toString() + "'");
+            strArr.add("'" + arr[i] + "'");
         }
-        return StringUtils.join(strArr, ",");
+        return String.join( ",",strArr);
     }
 
     /**
@@ -110,7 +109,7 @@ public class StringTool {
         for (int i = 0; i < list.size(); i++) {
             list.set(i, "'" + list.get(i) + "'");
         }
-        return StringUtils.join(list, ",");
+        return String.join( ",",list);
     }
     /**
      * @Author CYH
@@ -124,6 +123,6 @@ public class StringTool {
         for (int i = 0; i < list.size(); i++) {
             list.set(i, "\"" + list.get(i) + "\"");
         }
-        return StringUtils.join(list, ",");
+        return String.join( ",",list);
     }
 }

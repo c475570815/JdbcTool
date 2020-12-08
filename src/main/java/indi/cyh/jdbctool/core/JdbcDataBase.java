@@ -1,13 +1,13 @@
 package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import indi.cyh.jdbctool.config.DbConfig;
 import indi.cyh.jdbctool.entity.BsDiary;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
 import indi.cyh.jdbctool.tool.LogTool;
 import indi.cyh.jdbctool.tool.StringTool;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
@@ -100,7 +100,7 @@ public class JdbcDataBase {
     /**
      * 从配置文件中获取是否为调试模式
      */
-    private final boolean isDebugger = DataSourceFactory.getIsDebugger();
+    private final boolean isDebugger = DbConfig.isIsDebugger();
     /**
      * 日志工具
      *
@@ -388,10 +388,10 @@ public class JdbcDataBase {
                 placeholderList.add("?");
             }
         }
-        insertSqlBuilder.append(StringUtils.join(columnNameList, ","));
+        insertSqlBuilder.append(String.join( ",",columnNameList));
         insertSqlBuilder.append(")");
         insertSqlBuilder.append(" VALUES (");
-        insertSqlBuilder.append(StringUtils.join(placeholderList, ","));
+        insertSqlBuilder.append(String.join( ",",placeholderList));
         insertSqlBuilder.append(")");
         String sql = insertSqlBuilder.toString();
         Object[] params = valueList.toArray();
@@ -406,7 +406,7 @@ public class JdbcDataBase {
                     // 预处理 注意参数 PreparedStatement.RETURN_GENERATED_KEYS
                     PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
                     for (int i = 0; i < params.length; i++) {
-                        ps.setObject((i+1), params[i]);
+                        ps.setObject((i + 1), params[i]);
                     }
                     return ps;
                 }
