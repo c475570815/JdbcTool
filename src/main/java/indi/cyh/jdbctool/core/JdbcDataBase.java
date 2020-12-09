@@ -109,7 +109,7 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/7/16 21:16
      **/
-    private final LogTool log = new LogTool(isDebugger);
+    private final LogTool log = new LogTool();
 
     public JdbcDataBase(DruidDataSource dataSource) {
         this.dataSource = dataSource;

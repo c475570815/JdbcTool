@@ -1,6 +1,9 @@
 package indi.cyh.jdbctool.tool;
 
+import indi.cyh.jdbctool.config.DbConfig;
+import org.apache.log4j.Logger;
 import org.springframework.lang.Nullable;
+
 
 /**
  * @ClassName LogTool
@@ -10,12 +13,7 @@ import org.springframework.lang.Nullable;
  */
 public class LogTool {
 
-    private Boolean debugger;
-
-    public LogTool(Boolean isDebugger) {
-        this.debugger = isDebugger;
-    }
-
+    private final static Logger logger =  Logger.getLogger(LogTool.class);
 
     /**
      * sql执行耗时
@@ -25,7 +23,7 @@ public class LogTool {
      * @date 2020/7/14 0014 16:46
      **/
     public void printTimeLost(long start) {
-        if(debugger) {
+        if(DbConfig.isIsDebugger()) {
             long l = System.currentTimeMillis() - start;
             StringBuilder builder = new StringBuilder();
             long millis = 1;
@@ -44,7 +42,7 @@ public class LogTool {
             long ms = l % days % hours % minutes % seconds / millis;
             if (ms >= 1)
                 builder.append((int) (ms)).append("毫秒");
-            System.out.println("耗时:" + builder.toString());
+            logger.info("\n执行耗时:" + builder.toString()+"\n");
         }
     }
     /**
@@ -57,21 +55,23 @@ public class LogTool {
      **/
     public   void printLog(String sql,String jdbcUrl, @Nullable Object... params) {
         //默认打开打印  当配置中设置了非调试模式则关闭打印
-        if (debugger) {
-            System.out.println("##########################################JDBCTOOL##########################################");
-            System.out.println("conStr:" +jdbcUrl);
-            System.out.println("");
-            System.out.println("sql : " + sql);
+        if (DbConfig.isIsDebugger()) {
+            StringBuffer buffer=new StringBuffer();
+            buffer.append("\n##########################################JDBCTOOL##########################################\n");
+            buffer.append("conStr:" +jdbcUrl+"\n");
+            buffer.append("\n");
+            buffer.append("sql : " + sql+"\n");
             if (params != null && params.length != 0) {
-                System.out.println("");
-                System.out.println(params.length + "  params");
-                System.out.println("");
+                buffer.append("\n");
+                buffer.append(params.length + "  params"+"\n");
+                buffer.append("\n");
                 for (int i = 0; i < params.length; i++) {
-                    System.out.println("param-" + (i + 1) + ": " + String.valueOf(params[i]) + "[" + params[i].getClass().getName() + "]");
-                    System.out.println("");
+                    buffer.append("param-" + (i + 1) + ": " + params[i] + "[" + params[i].getClass().getName() + "]\n");
+                    buffer.append("\n");
                 }
             }
-            System.out.println("##########################################JDBCTOOL##########################################");
+            buffer.append("\n##########################################JDBCTOOL##########################################\n");
+            logger.info(buffer.toString());
         }
     }
 }

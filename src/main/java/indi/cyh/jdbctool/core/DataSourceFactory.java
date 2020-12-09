@@ -219,8 +219,8 @@ public class DataSourceFactory {
         }
         //监控设置
         try {
-            //,log4j2
-            dataSource.setFilters("stat,wall");
+            //
+            dataSource.setFilters("stat,wall,log4j");
         } catch (Exception e) {
 
         }
