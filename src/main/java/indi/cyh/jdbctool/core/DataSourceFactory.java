@@ -7,6 +7,7 @@ import indi.cyh.jdbctool.modle.DbTemplate;
 import indi.cyh.jdbctool.tool.JdbcUrlTool;
 import indi.cyh.jdbctool.tool.StringTool;
 
+import javax.sql.DataSource;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -19,7 +20,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @Date 2020/7/16 20:40
  */
 public class DataSourceFactory {
-
 
 
     //静态控制锁
@@ -219,8 +219,9 @@ public class DataSourceFactory {
         }
         //监控设置
         try {
-            //
+            //,2
             dataSource.setFilters("stat,wall,log4j");
+            dataSource.setEnable(true);
         } catch (Exception e) {
 
         }

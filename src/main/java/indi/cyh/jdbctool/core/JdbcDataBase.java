@@ -18,6 +18,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
+import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -388,10 +389,10 @@ public class JdbcDataBase {
                 placeholderList.add("?");
             }
         }
-        insertSqlBuilder.append(String.join( ",",columnNameList));
+        insertSqlBuilder.append(String.join(",", columnNameList));
         insertSqlBuilder.append(")");
         insertSqlBuilder.append(" VALUES (");
-        insertSqlBuilder.append(String.join( ",",placeholderList));
+        insertSqlBuilder.append(String.join(",", placeholderList));
         insertSqlBuilder.append(")");
         String sql = insertSqlBuilder.toString();
         Object[] params = valueList.toArray();
@@ -617,5 +618,17 @@ public class JdbcDataBase {
         log.printLog(sql, dataSource.getRawJdbcUrl());
         JdbcTemplate template = getJdbcTemplate();
         template.execute(sql);
+    }
+
+    /**
+     * 获取连接池
+     *
+     * @param
+     * @return javax.sql.DataSource
+     * @author cyh
+     * 2020/12/9 22:41
+     **/
+    public  DataSource getDataSource() {
+        return this.dataSource;
     }
 }
