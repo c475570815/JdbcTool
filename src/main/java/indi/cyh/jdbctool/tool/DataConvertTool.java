@@ -6,7 +6,9 @@ import org.postgresql.util.PGobject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +30,7 @@ public class DataConvertTool {
      **/
     public static String byteToBase64(Object columnDate) {
         byte[] bytes = toByteArray(columnDate);
-        return byte2Base64String(bytes).toString();
+        return byte2Base64String(bytes);
     }
 
     /**
@@ -55,7 +57,7 @@ public class DataConvertTool {
      **/
     public static String timestampToString(Object columnDate) {
         try {
-            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(columnDate).toString();
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(columnDate);
         } catch (Exception e) {
             e.printStackTrace();
             return "";
@@ -108,6 +110,7 @@ public class DataConvertTool {
                 String name = row.get(key).getClass().getName();
                 switch (name) {
                     case "java.sql.Timestamp":
+                    case "java.sql.Date":
                         converMap.put(key, ConvertType.TIMESTAMP_TO_STRING);
                         break;
                     case "org.postgresql.util.PGobject":
@@ -115,9 +118,6 @@ public class DataConvertTool {
                         break;
                     case "[B":
                         converMap.put(key, ConvertType.BYTE_TO_BASE64);
-                        break;
-                    case "java.sql.Date":
-                        converMap.put(key, ConvertType.TIMESTAMP_TO_STRING);
                         break;
                     default:
                         break;
@@ -133,48 +133,111 @@ public class DataConvertTool {
         }
         String sourceTypeName = res.getClass().getName();
         String targetTypename = targetType.getName();
-        switch (targetTypename) {
-            case "java.lang.String":
-                return convertToString(sourceTypeName, res);
-            case "java.lang.Integer":
-                return convertToInteger(sourceTypeName, res);
-            default:
-                //System.out.println("未处理目标类型:" + targetTypename);
-                return convertToString(sourceTypeName, res);
+        try {
+            switch (targetTypename) {
+                case "java.lang.Integer":
+                case "int":
+                    return convertToInteger(sourceTypeName, res);
+                case "java.util.Date":
+                    return convertToUtilDate(sourceTypeName, res);
+                case "java.sql.Timestamp":
+                    return convertToTimestamp(sourceTypeName, res);
+                case "java.sql.Date":
+                    return convertToSqlDate(sourceTypeName, res);
+                case "long":
+                    return convertToLong(sourceTypeName, res);
+                case "double":
+                    return convertToDouble(sourceTypeName, res);
+                case "float":
+                    return convertToFloat(sourceTypeName, res);
+                case "java.lang.Boolean":
+                case "boolean":
+                    return convertToBoolean(sourceTypeName, res);
+                default:
+                    return convertToString(sourceTypeName, res);
+            }
+        } catch (Exception e) {
+            System.out.println("转换失败：sourceTypeName=" + sourceTypeName + ", targetType = " + targetType + ", res = " + res);
+            return null;
         }
 
     }
 
-    private static Object convertToInteger(String sourceTypeName, Object res) {
+    private static boolean convertToBoolean(String sourceTypeName, Object res) {
         switch (sourceTypeName) {
-            case "java.lang.String":
-                return res.toString();
-            case "java.math.BigDecimal":
-                return Integer.valueOf(((java.math.BigDecimal) res).toString());
+            case "java.lang.Integer":
+            case "int":
+            case "float":
+            case "double":
+            case "long":
+                return Long.parseLong(res.toString()) > 0;
             default:
-                // System.out.println("String转换未处理源类型:" + sourceTypeName);
+                return Boolean.parseBoolean(res.toString());
         }
-        return Integer.valueOf(res.toString());
+    }
+
+    private static Object convertToFloat(String sourceTypeName, Object res) {
+        switch (sourceTypeName) {
+            default:
+                return Float.parseFloat(res.toString());
+        }
+    }
+
+    private static double convertToDouble(String sourceTypeName, Object res) {
+        switch (sourceTypeName) {
+            default:
+                return Double.parseDouble(res.toString());
+        }
+    }
+
+    private static java.sql.Date convertToSqlDate(String sourceTypeName, Object res) {
+        switch (sourceTypeName) {
+            default:
+                return new java.sql.Date(((java.sql.Timestamp) res).getTime());
+        }
+    }
+
+    private static long convertToLong(String sourceTypeName, Object res) {
+        switch (sourceTypeName) {
+            default:
+                return Long.parseLong(res.toString());
+        }
+    }
+
+    private static Timestamp convertToTimestamp(String sourceTypeName, Object res) {
+        switch (sourceTypeName) {
+            default:
+                return (java.sql.Timestamp) res;
+        }
+    }
+
+    private static Date convertToUtilDate(String sourceTypeName, Object res) {
+        switch (sourceTypeName) {
+            default:
+                return new Date(((java.sql.Timestamp) res).getTime());
+        }
+    }
+
+    private static int convertToInteger(String sourceTypeName, Object res) {
+        switch (sourceTypeName) {
+            default:
+                return Integer.parseInt(res.toString());
+        }
+
     }
 
     private static String convertToString(String sourceTypeName, Object res) {
         switch (sourceTypeName) {
-            case "java.lang.String":
-                return res.toString();
             case "java.sql.Timestamp":
+            case "java.sql.Date":
                 return timestampToString(res);
             case "org.postgresql.util.PGobject":
                 return pgObjectToString(res);
             case "[B":
                 return byteToBase64(res);
-            case "java.sql.Date":
-                return timestampToString(res);
-            case "java.math.BigDecimal":
-                return res.toString();
             default:
-                // System.out.println("String转换未处理源类型:" + sourceTypeName);
+                return res.toString();
         }
-        return res.toString();
     }
 
 }

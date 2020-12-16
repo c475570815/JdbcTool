@@ -35,7 +35,12 @@ public class JdbcRowMapper<T> implements RowMapper<T> {
                 boolean accessFlag = field.isAccessible();
                 field.setAccessible(true);
                 Object res = resultSet.getObject(fieldColumnMap.get(column));
-                field.set(t, DataConvertTool.convertObject(field.getType(), res));
+                Object lastConvertValue=DataConvertTool.convertObject(field.getType(), res);
+                try {
+                    field.set(t, lastConvertValue);
+                }catch (Exception e){
+                    System.out.println("转换有误：entity=" + t.getClass() + ", filedName = " +  column+ ", Value = " + res);
+                }
                 field.setAccessible(accessFlag);
             }
             return t;
