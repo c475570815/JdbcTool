@@ -220,7 +220,7 @@ public class DataSourceFactory {
         //监控设置
         try {
             //,2
-            dataSource.setFilters("stat,wall,log4j");
+            dataSource.setFilters("stat,wall");
             dataSource.setEnable(true);
         } catch (Exception e) {
 

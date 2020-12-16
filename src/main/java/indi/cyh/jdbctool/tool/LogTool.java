@@ -1,7 +1,6 @@
 package indi.cyh.jdbctool.tool;
 
 import indi.cyh.jdbctool.config.DbConfig;
-import org.apache.log4j.Logger;
 import org.springframework.lang.Nullable;
 
 
@@ -12,8 +11,6 @@ import org.springframework.lang.Nullable;
  * @Date 2020/7/14 0014 16:44
  */
 public class LogTool {
-
-    private final static Logger logger =  Logger.getLogger(LogTool.class);
 
     /**
      * sql执行耗时
@@ -42,7 +39,7 @@ public class LogTool {
             long ms = l % days % hours % minutes % seconds / millis;
             if (ms >= 1)
                 builder.append((int) (ms)).append("毫秒");
-            logger.info("\n执行耗时:" + builder.toString()+"\n");
+            System.out.println("\n执行耗时:" + builder.toString()+"\n");
         }
     }
     /**
@@ -71,7 +68,7 @@ public class LogTool {
                 }
             }
             buffer.append("\n##########################################JDBCTOOL##########################################\n");
-            logger.info(buffer.toString());
+            System.out.println(buffer.toString());
         }
     }
 }

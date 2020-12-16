@@ -2,7 +2,6 @@ package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import indi.cyh.jdbctool.config.DbConfig;
-import indi.cyh.jdbctool.entity.BsDiary;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
@@ -144,7 +143,12 @@ public class JdbcDataBase {
         log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        T t = (T) template.queryForObject(sql, requiredType, params);
+        T t = null;
+        try {
+            t = (T) template.queryForObject(sql, requiredType, params);
+        } catch (Exception e) {
+            System.out.println("查询为空或者异常:" + e.getMessage());
+        }
         log.printTimeLost(start);
         return t;
     }
@@ -186,7 +190,12 @@ public class JdbcDataBase {
         log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        T t = (T) template.queryForObject(sql, new JdbcRowMapper<T>(requiredType), params);
+        T t = null;
+        try {
+            t = (T) template.queryForObject(sql, new JdbcRowMapper<T>(requiredType), params);
+        } catch (Exception e) {
+            System.out.println("查询为空或者异常:" + e.getMessage());
+        }
         log.printTimeLost(start);
         return t;
     }
@@ -205,7 +214,12 @@ public class JdbcDataBase {
         log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        List<T> t = template.query(sql, new JdbcRowMapper<T>(requiredType), params);
+        List<T> t = new ArrayList<>();
+        try {
+            t = template.query(sql, new JdbcRowMapper<T>(requiredType), params);
+        } catch (Exception e) {
+            System.out.println("查询为空或者异常:" + e.getMessage());
+        }
         log.printTimeLost(start);
         return t;
     }
@@ -223,7 +237,12 @@ public class JdbcDataBase {
         log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        Map map = template.queryForMap(sql, params);
+        Map map = null;
+        try {
+            map = template.queryForMap(sql, params);
+        } catch (Exception e) {
+            System.out.println("查询为空或者异常:" + e.getMessage());
+        }
         log.printTimeLost(start);
         return map;
     }
@@ -240,7 +259,12 @@ public class JdbcDataBase {
         log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        List<Map<String, Object>> list = template.queryForList(sql, params);
+        List<Map<String, Object>> list = new ArrayList<>();
+        try {
+            list = template.queryForList(sql, params);
+        } catch (Exception e) {
+            System.out.println("查询为空或者异常:" + e.getMessage());
+        }
         log.printTimeLost(start);
         return list;
     }
@@ -508,12 +532,12 @@ public class JdbcDataBase {
      * 根据主键更新
      *
      * @param requiredType
-     * @param diary
+     * @param entity
      * @return q
      * @author cyh
      * 2020/5/30 11:03
      **/
-    public void updateById(Class<BsDiary> requiredType, BsDiary diary) throws NoSuchFieldException, IllegalAccessException {
+    public <T> void updateById(Class<T> requiredType, T entity) throws NoSuchFieldException, IllegalAccessException {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
@@ -527,9 +551,9 @@ public class JdbcDataBase {
             String fieldColumn = fieldColumnMap.get(column);
             if (!fieldColumn.equals(primaryField)) {
                 updateByIdSqlBuilder.append(fieldColumn).append(" = ").append("?,");
-                valueList.add(field.get(diary));
+                valueList.add(field.get(entity));
             } else {
-                primaryFieldValue = field.get(diary);
+                primaryFieldValue = field.get(entity);
             }
         }
         updateByIdSqlBuilder.deleteCharAt(updateByIdSqlBuilder.length() - 1);
@@ -628,7 +652,7 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/12/9 22:41
      **/
-    public  DataSource getDataSource() {
+    public DataSource getDataSource() {
         return this.dataSource;
     }
 }

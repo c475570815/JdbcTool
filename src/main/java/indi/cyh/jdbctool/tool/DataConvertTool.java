@@ -136,11 +136,25 @@ public class DataConvertTool {
         switch (targetTypename) {
             case "java.lang.String":
                 return convertToString(sourceTypeName, res);
+            case "java.lang.Integer":
+                return convertToInteger(sourceTypeName, res);
             default:
                 //System.out.println("未处理目标类型:" + targetTypename);
-                return res;
+                return convertToString(sourceTypeName, res);
         }
 
+    }
+
+    private static Object convertToInteger(String sourceTypeName, Object res) {
+        switch (sourceTypeName) {
+            case "java.lang.String":
+                return res.toString();
+            case "java.math.BigDecimal":
+                return Integer.valueOf(((java.math.BigDecimal) res).toString());
+            default:
+                // System.out.println("String转换未处理源类型:" + sourceTypeName);
+        }
+        return Integer.valueOf(res.toString());
     }
 
     private static String convertToString(String sourceTypeName, Object res) {
@@ -158,7 +172,7 @@ public class DataConvertTool {
             case "java.math.BigDecimal":
                 return res.toString();
             default:
-               // System.out.println("String转换未处理源类型:" + sourceTypeName);
+                // System.out.println("String转换未处理源类型:" + sourceTypeName);
         }
         return res.toString();
     }

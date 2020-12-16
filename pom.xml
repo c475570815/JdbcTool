@@ -29,7 +29,7 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.19</version>
-<!--            <scope>provided</scope>-->
+            <scope>provided</scope>
         </dependency>
 
 
@@ -63,12 +63,7 @@
             <artifactId>fastjson</artifactId>
             <version>1.2.75</version>
         </dependency>
-        <!--日志-->
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
-        </dependency>
+
 
     </dependencies>
 
