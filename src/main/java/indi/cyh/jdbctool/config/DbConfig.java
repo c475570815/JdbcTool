@@ -7,6 +7,9 @@ import indi.cyh.jdbctool.modle.DbTemplate;
 import indi.cyh.jdbctool.tool.FileTool;
 import indi.cyh.jdbctool.tool.StringTool;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,9 +90,11 @@ public class DbConfig {
      * @author CYH
      * @date 2020/12/8 0008 10:29
      **/
-    private static String getConfigFromConfigFile(String fileName) {
-        String filePath = DbConfig.class.getClassLoader().getResource(fileName).getPath();
-        return FileTool.readToString(filePath);
+    private static String getConfigFromConfigFile(String fileName) throws IOException {
+        URL fileUrl = DbConfig.class.getClassLoader().getResource(fileName);
+        System.out.println("fileUrl = " + fileUrl.getPath());
+        InputStream in = fileUrl.openStream();
+        return FileTool.readToString(in);
     }
 
     public static Map<String, DbTemplate> getDefaultUrlTemplateMap() {
