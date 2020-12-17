@@ -1,6 +1,7 @@
 package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import indi.cyh.jdbctool.config.DataSourceConfig;
 import indi.cyh.jdbctool.config.DbConfig;
 import indi.cyh.jdbctool.modle.DbInfo;
 import indi.cyh.jdbctool.modle.DbTemplate;
@@ -225,39 +226,7 @@ public class DataSourceFactory {
         } catch (Exception e) {
 
         }
-        //配置初始化大小、最小、最大
-        dataSource.setInitialSize(10);
-        dataSource.setMinIdle(10);
-        //最大活跃数
-        dataSource.setMaxActive(20);
-        //配置从连接池获取连接等待超时的时间
-        dataSource.setMaxWait(10000);
-        //配置间隔多久启动一次DestroyThread，对连接池内的连接才进行一次检测，单位是毫秒。
-        //检测时:1.如果连接空闲并且超过minIdle以外的连接，如果空闲时间超过minEvictableIdleTimeMillis设置的值则直接物理关闭。
-        // 2.在minIdle以内的不处理。
-        dataSource.setTimeBetweenEvictionRunsMillis(600000);
-        // 配置一个连接在池中最大空闲时间，单位是毫秒
-        dataSource.setMinEvictableIdleTimeMillis(300000);
-        //  验证连接语句
-        // dataSource.setValidationQuery(false);
-        //设置从连接池获取连接时是否检查连接有效性，true时，如果连接空闲时间超过minEvictableIdleTimeMillis进行检查，否则不检查;false时，不检查
-        dataSource.setTestWhileIdle(false);
-        //设置从连接池获取连接时是否检查连接有效性，true时，每次都检查;false时，不检查
-        dataSource.setTestOnBorrow(false);
-        // 设置往连接池归还连接时是否检查连接有效性，true时，每次都检查;false时，不检查
-        dataSource.setTestOnReturn(false);
-        //打开PSCache，并且指定每个连接上PSCache的大小，Oracle等支持游标的数据库，打开此开关，会以数量级提升性能，具体查阅PSCache相关资料
-        dataSource.setPoolPreparedStatements(true);
-        //
-        dataSource.setMaxPoolPreparedStatementPerConnectionSize(20);
-        //根据自身业务及事务大小来设置
-        dataSource.setConnectionProperties("oracle.net.CONNECT_TIMEOUT=6000;oracle.jdbc.ReadTimeout=180000");
-        //打开后，增强timeBetweenEvictionRunsMillis的周期性连接检查，minIdle内的空闲连接，每次检查强制验证连接有效性. 参考：https://github.com/alibaba/druid/wiki/KeepAlive_cn
-        dataSource.setKeepAlive(true);
-        // 连接泄露检查，打开removeAbandoned功能 , 连接从连接池借出后，长时间不归还，将触发强制回连接。回收周期随timeBetweenEvictionRunsMillis进行，如果连接为从连接池借出状态，并且未执行任何sql，并且从借出时间起已超过removeAbandonedTimeout时间，则强制归还连接到连接池中。
-        dataSource.setRemoveAbandoned(true);
-
-        dataSource.setRemoveAbandonedTimeout(80);
+        DataSourceConfig.setConfig(dataSource);
         wl.lock();
         try {
             listDbSource.put(dbInfo, dataSource);

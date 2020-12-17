@@ -79,6 +79,7 @@ public class DbConfig {
             }
         }
         defalutDatasource = config.getJSONObject("dbConfig").getJSONArray("datasource").toJavaList(DbInfo.class);
+        DataSourceConfig.loadConfig(config.getJSONObject("druid"));
         DataSourceFactory.loadMainDbConfig();
     }
 
