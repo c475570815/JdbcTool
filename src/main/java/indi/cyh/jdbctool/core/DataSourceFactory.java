@@ -240,4 +240,32 @@ public class DataSourceFactory {
         System.out.println("目前连接池数量: " + listDbSource.size());
         return dataSource;
     }
+
+    /**
+     * 根据配置文件中的sourceName来获取JdbcDataBase
+     *
+     * @param SourceName
+     * @return indi.cyh.jdbctool.core.JdbcDataBase
+     * @author CYH
+     * @date 2020/12/21 0021 15:34
+     **/
+    public static JdbcDataBase getDbBySourceName(String SourceName) {
+        try {
+            DbInfo entity = new DbInfo();
+            List<DbInfo> defalutDatasource = DbConfig.getDefalutDatasource();
+            if (defalutDatasource.size() > 0) {
+                for (DbInfo dbInfo : defalutDatasource) {
+                    if (SourceName.equals(dbInfo.getSourceName())) {
+                        entity = dbInfo;
+                        return getDb(entity);
+                    }
+                }
+            }
+            throw new Exception(SourceName + "加载失败!");
+        } catch (Exception e) {
+            System.out.println(SourceName + "加载失败!");
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

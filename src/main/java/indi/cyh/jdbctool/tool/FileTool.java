@@ -35,7 +35,7 @@ public class FileTool {
     public static String readToString(InputStream inStream) {
         try {
             ByteArrayOutputStream outSteam = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[inStream.available()];
             int len = -1;
             while ((len = inStream.read(buffer)) != -1) {
                 outSteam.write(buffer, 0, len);

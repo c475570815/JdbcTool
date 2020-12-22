@@ -7,6 +7,7 @@ package indi.cyh.jdbctool.modle;
  * @date 2020/4/11 8:41
  */
 public class DbInfo {
+    String sourceName;
     String type;
     String ip;
     Integer port;
@@ -16,6 +17,14 @@ public class DbInfo {
     String connectStr;
     String driverClassName;
 
+
+    public String getSourceName() {
+        return sourceName;
+    }
+
+    public void setSourceName(String sourceName) {
+        this.sourceName = sourceName;
+    }
 
     public String getType() {
         return type;
