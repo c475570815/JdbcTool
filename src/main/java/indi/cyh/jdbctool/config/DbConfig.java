@@ -1,5 +1,6 @@
 package indi.cyh.jdbctool.config;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import indi.cyh.jdbctool.core.DataSourceFactory;
 import indi.cyh.jdbctool.modle.DbInfo;
@@ -10,9 +11,7 @@ import indi.cyh.jdbctool.tool.StringTool;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -72,15 +71,49 @@ public class DbConfig {
     private static void setValueFromConfig(JSONObject config) throws Exception {
         isDebugger = config.get("isDebugger").equals(true);
         //加载通过配置问价添加的模板
-        List<DbTemplate> dbTemplates = config.getJSONObject("dbConfig").getJSONArray("templateList").toJavaList(DbTemplate.class);
+        List<DbTemplate> dbTemplates = getDbTemplateList(config.getJSONObject("dbConfig").getJSONArray("templateList"));
+
         for (DbTemplate dbTemplate : dbTemplates) {
             if (!defaultUrlTemplateMap.keySet().contains(dbTemplate.getType())) {
                 addDbTmplate(dbTemplate);
             }
         }
-        defalutDatasource = config.getJSONObject("dbConfig").getJSONArray("datasource").toJavaList(DbInfo.class);
+        defalutDatasource = getdefalutDatasource(config.getJSONObject("dbConfig").getJSONArray("datasource"));
+
+
         DataSourceConfig.loadConfig(config.getJSONObject("druid"));
         DataSourceFactory.loadMainDbConfig();
+    }
+
+    private static List<DbInfo> getdefalutDatasource(JSONArray jsonArray) {
+        List<DbInfo> res = new ArrayList<>();
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JSONObject object = jsonArray.getJSONObject(i);
+            DbInfo dbInfo = new DbInfo();
+            dbInfo.setSourceName(object.getString("jdbcTemplate"));
+            dbInfo.setType(object.getString("type"));
+            dbInfo.setIp(object.getString("ip"));
+            dbInfo.setPort(object.getInteger("port"));
+            dbInfo.setLoginName(object.getString("loginName"));
+            dbInfo.setPwd(object.getString("pwd"));
+            dbInfo.setEndParam(object.getString("endParam"));
+            res.add(dbInfo);
+        }
+        return res;
+    }
+
+    private static List<DbTemplate> getDbTemplateList(JSONArray jsonArray) {
+        List<DbTemplate> res = new ArrayList<>();
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JSONObject object = jsonArray.getJSONObject(i);
+            DbTemplate template = new DbTemplate();
+            template.setJdbcTemplate(object.getString("jdbcTemplate"));
+            template.setType(object.getString("type"));
+            template.setPort(object.getInteger("port"));
+            template.setDriverClassName(object.getString("driverClassName"));
+            res.add(template);
+        }
+        return res;
     }
 
     /**

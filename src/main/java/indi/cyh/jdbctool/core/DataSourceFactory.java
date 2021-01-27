@@ -10,6 +10,7 @@ import indi.cyh.jdbctool.tool.StringTool;
 
 import javax.sql.DataSource;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -36,7 +37,7 @@ public class DataSourceFactory {
     /**
      * 静态连接池
      */
-    private static final Map<DbInfo, DruidDataSource> listDbSource = new LinkedHashMap<>();
+    private static final ConcurrentHashMap<DbInfo, DruidDataSource> listDbSource = new ConcurrentHashMap<>();
 
 
     static {
@@ -181,7 +182,6 @@ public class DataSourceFactory {
      **/
     public static void loadMainDbConfig() {
         try {
-            DbInfo entity = new DbInfo();
             List<DbInfo> defalutDatasource = DbConfig.getDefalutDatasource();
             if (defalutDatasource.size() > 0) {
                 DbInfo mainDb = defalutDatasource.get(0);
