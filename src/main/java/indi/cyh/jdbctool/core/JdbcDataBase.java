@@ -166,7 +166,7 @@ public class JdbcDataBase {
     public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
         log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        List<T> t = getJdbcTemplate().query(sql, new RowMapper<T>() {
+        List<T> t = getJdbcTemplate().query(sql, params, new RowMapper<T>() {
             @Override
             public T mapRow(ResultSet resultSet, int i) throws SQLException {
                 return (T) resultSet.getObject(1);
