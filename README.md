@@ -13,37 +13,52 @@
 
 
 #### 使用说明
-- 主数据库配置示例
+在classpath下wood.json中以json格式配置数据库信息,也可在环境变量中以参数configFile指定文件名(ex:java -jar demo.jar --configFile=wood.json)
+- json配置文件示例
+```
+{
+//是否调试模式 控制控制台日志打印输出
+  "isDebugger": true,
+  "dbConfig": {
+  //多数据源配置
+    "datasource": [
+      {
+        "sourceName": "mainDb",
+        "type": "mysql",
+        "ip": "*.*.*.*",
+        "port": 3306,
+        "loginName": "*",
+        "pwd":  "*",
+        "endParam": "singlewood?serverTimezone=UTC"
+      }
+    ],
+    //jdbc模板为运行中动态生成数据源提供模板支持
+    "templateList": [
+      {
+        "type": "mysql",
+        "driverClassName": "com.mysql.cj.jdbc.Driver",
+        "port": 3306,
+        "jdbcTemplate": "jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+      },
+      {
+        "type": "oracle",
+        "driverClassName": "oracle.jdbc.driver.OracleDriver",
+        "port": 1521,
+        "jdbcTemplate": "jdbc:oracle:thin:@{{IP}}:{{PORT}}/{{END_PARAM}}"
+      },
+      {
+        "type": "postgres",
+        "driverClassName": "org.postgresql.Driver",
+        "port": 5432,
+        "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+      }
+    ]
+  }
+}
 
 ```
-spring:
-  datasource:
-    url: jdbc:mysql://127.0.0.1:3306/singlewood?serverTimezone=UTC
-    username: singlewood
-    password: singlewood
-    driver-class-name: com.mysql.cj.jdbc.Driver
-```
-若不想配置默认库可以在入口使用注解(结合spring-boot使用时)
-
-```
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class,
-        DataSourceTransactionManagerAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class})
-```
-
-
-- jdbcConnection模板示例
-
-必须包含{{IP}}、{{PORT}}、{{END_PARAM}}作为生成jdbcConnection的占位符
-```
-jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}
-```
-
-
 
 - 实体类示例
-
-必须包含{{IP}}、{{PORT}}、{{END_PARAM}}作为生成jdbcConnection的占位符
 ```
 @TableName("ST_PARM")
 @PrimaryField("PARM_ID")
@@ -123,8 +138,9 @@ public class StParm implements Serializable {
 ```
             //1.使用默认主配
              JdbcDataBase db = DataSourceFactory.getMianDb();
-
-            //2.给出必要参数 依赖默认模板生成
+            //2.使用配置名匹配加载
+             db=  DataSourceFactory.getDbBySourceName("mainDb");
+            //3.给出必要参数 依赖默认模板生成 
             JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
                 setDbType("mysql");
                 setPort(3306);
@@ -134,14 +150,14 @@ public class StParm implements Serializable {
                 setEndParam("singlewood");
             }});
 
-           // 3.给出url  不依赖模板
+           // 4.给出url  不依赖模板
             JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
                 setConnectStr("jdbc:mysql://***:3306/singlewood");
                 setLogoinName("***");
                 setPwd("***");
             }});
 
-           // 4.给出新模板 依赖模板生成
+           // 5.给出新模板 依赖模板生成
             DataSourceFactory.addDbTmplate(new DbTemplate(){{
                 setUrlTemplate("jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}");
                 setPort(3306);
@@ -213,7 +229,7 @@ public class StParm implements Serializable {
 - 分页查询
 
 ```
-            db.queryPageData("select  *  from bs_diary",1,10,true);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        db.queryPageData("select  *  from bs_diary",1,10,true);
 ```
 - 根据id更新
 ```
