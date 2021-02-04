@@ -8,7 +8,6 @@ import indi.cyh.jdbctool.modle.DbTemplate;
 import indi.cyh.jdbctool.tool.JdbcUrlTool;
 import indi.cyh.jdbctool.tool.StringTool;
 
-import javax.sql.DataSource;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
