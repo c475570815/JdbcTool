@@ -1,7 +1,6 @@
 package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
-import indi.cyh.jdbctool.config.DbConfig;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
@@ -51,12 +50,12 @@ public class JdbcDataBase {
 
     static {
         //sql 匹配相应参数 赋值
-        selectPattern = Pattern.compile("\\s*(SELECT|EXECUTE|CALL)\\s", 78);
-        fromPattern = Pattern.compile("\\s*FROM\\s", 74);
+        selectPattern = Pattern.compile("\\s*(SELECT|EXECUTE|CALL)\\s", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
+        fromPattern = Pattern.compile("\\s*FROM\\s", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.UNICODE_CASE);
         PATTERN_BRACKET = Pattern.compile("(\\(|\\)|[^\\(\\)]*)");
-        PATTERN_SELECT = Pattern.compile("select([\\W\\w]*)from", 78);
-        PATTERN_DISTINCT = Pattern.compile("\\A\\s+DISTINCT\\s", 78);
-        rxOrderBy = Pattern.compile("\\bORDER\\s+BY\\s+([\\W\\w]*)(ASC|DESC)+", 78);
+        PATTERN_SELECT = Pattern.compile("select([\\W\\w]*)from", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
+        PATTERN_DISTINCT = Pattern.compile("\\A\\s+DISTINCT\\s", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
+        rxOrderBy = Pattern.compile("\\bORDER\\s+BY\\s+([\\W\\w]*)(ASC|DESC)+", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
         //事务参数赋默认值
         definition = new TransactionDefinition() {
             @Override
@@ -87,20 +86,14 @@ public class JdbcDataBase {
 
     }
 
-
-    /**
-     * 数据库信息实体类
-     */
-    public DbInfo dbInfo;
     /**
      * 当前对象使用的数据池
      */
-    DruidDataSource dataSource = null;
+    DruidDataSource dataSource;
 
     /**
      * 从配置文件中获取是否为调试模式
      */
-    private final boolean isDebugger = DbConfig.isIsDebugger();
     /**
      * 日志工具
      *
@@ -145,7 +138,7 @@ public class JdbcDataBase {
         JdbcTemplate template = getJdbcTemplate();
         T t = null;
         try {
-            t = (T) template.queryForObject(sql, requiredType, params);
+            t = template.queryForObject(sql, requiredType, params);
         } catch (Exception e) {
             System.out.println("查询为空或者异常:" + e.getMessage());
         }
@@ -157,7 +150,6 @@ public class JdbcDataBase {
      * 查询简单类型集合结果
      *
      * @param sql
-     * @param requiredType
      * @param params
      * @return java.util.List<T>
      * @author CYH
@@ -166,12 +158,7 @@ public class JdbcDataBase {
     public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
         log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        List<T> t = getJdbcTemplate().query(sql, params, new RowMapper<T>() {
-            @Override
-            public T mapRow(ResultSet resultSet, int i) throws SQLException {
-                return (T) resultSet.getObject(1);
-            }
-        });
+        List<T> t = getJdbcTemplate().query(sql, params, (resultSet, i) -> (T) resultSet.getObject(1));
         log.printTimeLost(start);
         return t;
     }
@@ -192,7 +179,7 @@ public class JdbcDataBase {
         JdbcTemplate template = getJdbcTemplate();
         T t = null;
         try {
-            t = (T) template.queryForObject(sql, new JdbcRowMapper<T>(requiredType), params);
+            t = template.queryForObject(sql, new JdbcRowMapper<>(requiredType), params);
         } catch (Exception e) {
             System.out.println("查询为空或者异常:" + e.getMessage());
         }
@@ -216,7 +203,7 @@ public class JdbcDataBase {
         JdbcTemplate template = getJdbcTemplate();
         List<T> t = new ArrayList<>();
         try {
-            t = template.query(sql, new JdbcRowMapper<T>(requiredType), params);
+            t = template.query(sql, new JdbcRowMapper<>(requiredType), params);
         } catch (Exception e) {
             System.out.println("查询为空或者异常:" + e.getMessage());
         }
@@ -233,11 +220,11 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/5/28 22:12
      **/
-    public Map queryForMap(String sql, @Nullable Object... params) {
+    public Map<String, Object> queryForMap(String sql, @Nullable Object... params) {
         log.printLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
-        Map map = null;
+        Map<String, Object> map = null;
         try {
             map = template.queryForMap(sql, params);
         } catch (Exception e) {
@@ -302,7 +289,7 @@ public class JdbcDataBase {
      * @date 2020/4/28 0028 16:12
      **/
     private PageQueryInfo getPageQueryInfo(Integer page, Integer rows, String sql) throws Exception {
-        long skip = (long) ((page - 1) * rows);
+        long skip = (page - 1) * rows;
         Matcher matcherSelect = PATTERN_SELECT.matcher(sql);
         if (!matcherSelect.find()) {
             throw new Exception("build paging querySql error:canot find select from");
@@ -317,8 +304,8 @@ public class JdbcDataBase {
             }
 
             int firstSelectIndex = sql.toLowerCase().indexOf("select");
-            String formatSQL = "";
-            if (!matcherDistinct.find() && !"*".equals(sqlSelectCols.trim().toLowerCase())) {
+            String formatSQL;
+            if (!matcherDistinct.find() && !"*".equalsIgnoreCase(sqlSelectCols.trim())) {
                 formatSQL = sql.substring(firstSelectIndex + 6);
             } else {
                 formatSQL = " peta_table.* from (" + sql + ") peta_table ";
@@ -403,6 +390,7 @@ public class JdbcDataBase {
         List<String> columnNameList = new ArrayList<>();
         List<String> placeholderList = new ArrayList<>();
         List<Object> valueList = new ArrayList<>();
+        assert fieldColumnMap != null;
         for (String column : fieldColumnMap.keySet()) {
             Field field = requiredType.getDeclaredField(column);
             field.setAccessible(true);
@@ -424,20 +412,16 @@ public class JdbcDataBase {
             //返回主键预处理
             JdbcTemplate template = getJdbcTemplate();
             KeyHolder keyHolder = new GeneratedKeyHolder();
-            template.update(new PreparedStatementCreator() {
-                @Override
-                public PreparedStatement createPreparedStatement(Connection conn)
-                        throws SQLException {
-                    // 预处理 注意参数 PreparedStatement.RETURN_GENERATED_KEYS
-                    PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
-                    for (int i = 0; i < params.length; i++) {
-                        ps.setObject((i + 1), params[i]);
-                    }
-                    return ps;
+            template.update(conn -> {
+                // 预处理 注意参数 PreparedStatement.RETURN_GENERATED_KEYS
+                PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+                for (int i = 0; i < params.length; i++) {
+                    ps.setObject((i + 1), params[i]);
                 }
+                return ps;
             }, keyHolder);
             log.printLog(sql, dataSource.getRawJdbcUrl(), params);
-            return keyHolder.getKey().intValue();
+            return Objects.requireNonNull(keyHolder.getKey()).intValue();
         } else {
             executeDMLSql(sql, params);
             return null;
@@ -456,10 +440,8 @@ public class JdbcDataBase {
     public <T> void delectbyId(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
-        StringBuilder delectSqlBuilder = new StringBuilder("DELETE FROM ");
-        delectSqlBuilder.append(tableName + "  where  ");
-        delectSqlBuilder.append(primaryField).append("=?");
-        String sql = delectSqlBuilder.toString();
+        String sql = "DELETE FROM " + tableName + "  where  " +
+                primaryField + "=?";
         executeDMLSql(sql, id);
     }
 
@@ -479,10 +461,8 @@ public class JdbcDataBase {
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
-        StringBuilder delectSqlBuilder = new StringBuilder("DELETE FROM ");
-        delectSqlBuilder.append(tableName + "  where  ");
-        delectSqlBuilder.append(primaryField).append(" in (" + StringTool.getSqlValueStr(isList) + ")");
-        String sql = delectSqlBuilder.toString();
+        String sql = "DELETE FROM " + tableName + "  where  " +
+                primaryField + " in (" + StringTool.getSqlValueStr(isList) + ")";
         executeDMLSql(sql);
     }
 
@@ -498,10 +478,8 @@ public class JdbcDataBase {
     public <T> T findRowById(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
-        StringBuilder dfindRowByIdSqlBuilder = new StringBuilder("select * FROM ");
-        dfindRowByIdSqlBuilder.append(tableName + "  where  ");
-        dfindRowByIdSqlBuilder.append(primaryField).append("=?");
-        String sql = dfindRowByIdSqlBuilder.toString();
+        String sql = "select * FROM " + tableName + "  where  " +
+                primaryField + "=?";
         return queryOneRow(sql, requiredType, id);
     }
 
@@ -521,10 +499,8 @@ public class JdbcDataBase {
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
-        StringBuilder findRowByIdSqlBuilder = new StringBuilder("select * FROM ");
-        findRowByIdSqlBuilder.append(tableName + "  where  ");
-        findRowByIdSqlBuilder.append(primaryField).append(" in  (" + StringTool.getSqlValueStr(isList) + ")");
-        String sql = findRowByIdSqlBuilder.toString();
+        String sql = "select * FROM " + tableName + "  where  " +
+                primaryField + " in  (" + StringTool.getSqlValueStr(isList) + ")";
         return queryList(sql, requiredType);
     }
 
@@ -544,7 +520,8 @@ public class JdbcDataBase {
         Object primaryFieldValue = null;
         List<Object> valueList = new ArrayList<>();
         StringBuilder updateByIdSqlBuilder = new StringBuilder("UPDATE ");
-        updateByIdSqlBuilder.append(tableName + "  set  ");
+        updateByIdSqlBuilder.append(tableName).append("  set  ");
+        assert fieldColumnMap != null;
         for (String column : fieldColumnMap.keySet()) {
             Field field = requiredType.getDeclaredField(column);
             field.setAccessible(true);
@@ -557,7 +534,7 @@ public class JdbcDataBase {
             }
         }
         updateByIdSqlBuilder.deleteCharAt(updateByIdSqlBuilder.length() - 1);
-        updateByIdSqlBuilder.append(" where ").append(primaryField + "=").append("?");
+        updateByIdSqlBuilder.append(" where ").append(primaryField).append("=").append("?");
         valueList.add(primaryFieldValue);
         String sql = updateByIdSqlBuilder.toString();
         Object[] params = valueList.toArray();

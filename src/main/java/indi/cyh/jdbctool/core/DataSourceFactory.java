@@ -160,7 +160,7 @@ public class DataSourceFactory {
      * 2020/5/28 21:59
      **/
     private static String getDbConnectUrl(DbTemplate config, DbInfo entity) {
-        String urlTemplate = "";
+        String urlTemplate;
         if (StringTool.isEmpty(entity.getConnectStr())) {
             urlTemplate = config.getJdbcTemplate();
             urlTemplate = urlTemplate.replace(DbConfig.IP, entity.getIp());
@@ -214,7 +214,7 @@ public class DataSourceFactory {
             Map<String, Object> dataInfoMap = JdbcUrlTool.findDataInfoMapByUrl(dbInfo.getConnectStr());
             dataSource.setName(dataInfoMap.get("type") + "-" + dataInfoMap.get("ip") + "-" + dbInfo.getLoginName());
             dataSource.setDbType(dataInfoMap.get("type").toString());
-        } catch (Exception e) {
+        } catch (Exception ignored) {
 
         }
         //监控设置
@@ -222,7 +222,7 @@ public class DataSourceFactory {
             //,2
             dataSource.setFilters("stat,wall");
             dataSource.setEnable(true);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
 
         }
         DataSourceConfig.setConfig(dataSource);
