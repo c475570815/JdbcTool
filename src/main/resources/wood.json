@@ -1,17 +1,20 @@
 {
+//是否调试模式 控制控制台日志打印输出
   "isDebugger": true,
   "dbConfig": {
+  //多数据源配置
     "datasource": [
       {
         "sourceName": "mainDb",
         "type": "mysql",
-        "ip": "106.52.167.158",
+        "ip": "*.*.*.*",
         "port": 3306,
-        "loginName": "singlewood",
-        "pwd":  "singlewood",
+        "loginName": "*",
+        "pwd":  "*",
         "endParam": "singlewood?serverTimezone=UTC"
       }
     ],
+    //jdbc模板为运行中动态生成数据源提供模板支持
     "templateList": [
       {
         "type": "mysql",
