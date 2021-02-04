@@ -128,17 +128,17 @@ public class StParm implements Serializable {
             JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
                 setDbType("mysql");
                 setPort(3306);
-                setLogoinName("root");
-                setPwd("cyh123321");
-                setIp("106.52.167.158");
+                setLogoinName("***");
+                setPwd("***");
+                setIp("***");
                 setEndParam("singlewood");
             }});
 
            // 3.给出url  不依赖模板
             JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
-                setConnectStr("jdbc:mysql://106.52.167.158:3306/singlewood");
-                setLogoinName("root");
-                setPwd("cyh123321");
+                setConnectStr("jdbc:mysql://***:3306/singlewood");
+                setLogoinName("***");
+                setPwd("***");
             }});
 
            // 4.给出新模板 依赖模板生成
@@ -151,9 +151,9 @@ public class StParm implements Serializable {
             JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
                 setDbType("mysql-t");
                 setPort(3306);
-                setLogoinName("root");
-                setPwd("cyh123321");
-                setIp("106.52.167.158");
+                setLogoinName("***");
+                setPwd("***");
+                setIp("***");
                 setEndParam("singlewood");
             }});
 ```
