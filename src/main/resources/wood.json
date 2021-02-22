@@ -32,5 +32,9 @@
         "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
       }
     ]
+  },
+  "druidConfig": {
+    "initialSize": 22,
+    "maxActive": 30
   }
 }

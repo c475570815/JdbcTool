@@ -1,6 +1,7 @@
 # JdbcTool
 
 #### 介绍
+
 依靠spring-jdbc的动态多源数据库操作工具
 
 #### 特性
@@ -11,10 +12,12 @@
 - 分页查询
 - 集成duird(若有需要可在项目中添加druid监控页面配置)
 
-
 #### 使用说明
+
 在classpath下wood.json中以json格式配置数据库信息,也可在环境变量中以参数configFile指定文件名(ex:java -jar demo.jar --configFile=wood.json)
+
 - json配置文件示例
+
 ```
 {
 //是否调试模式 控制控制台日志打印输出
@@ -53,12 +56,18 @@
         "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
       }
     ]
+  },
+  //通过配置druidConfig属性自定义默认druid配置 更多druid参数可自行百度
+  "druidConfig": {
+    "initialSize": 22,
+    "maxActive": 30
   }
 }
 
 ```
 
 - 实体类示例
+
 ```
 @TableName("ST_PARM")
 @PrimaryField("PARM_ID")
@@ -133,6 +142,7 @@ public class StParm implements Serializable {
 ```
 
 ### 使用示例
+
 1. 初始化数据连接
 
 ```
@@ -173,7 +183,9 @@ public class StParm implements Serializable {
                 setEndParam("singlewood");
             }});
 ```
+
 2. 具体使用
+
 - 新增单个实体(配合带本工具注解的实体类使用)
 
 ```
@@ -183,12 +195,15 @@ public class StParm implements Serializable {
             }});
             
 ```
+
 - 关联id单个删除(配合带本工具注解的实体类使用)
 
 ```
             db.delectbyId(BsDiary.class,"1");
 ```
+
 - 关联id多个删除(配合带本工具注解的实体类使用)
+
 ```
             db.delectbyIds(BsDiary.class, new ArrayList<>() {{
                 add("1");
@@ -196,47 +211,57 @@ public class StParm implements Serializable {
                 ...
             }});
 ```
+
 - 单一简单类型数据查询
 
 ```
             db.querySingleTypeResult("select  head  from bs_diary where d_diaryId=?",String.class,"42");
 ```
+
 - 多行简单类型数据查询
 
 ```
             db.querySingleTypeList("select  head  from bs_diary ",String.class);
 ```
+
 - 单一实体数据查询(配合带本工具注解的实体类使用)
 
 ```
             db.queryOneRow("select  * from bs_diary  where d_diaryId=?",BsDiary.class,"42");
 ```
+
 - 多行实体数据查询(配合带本工具注解的实体类使用)
 
 ```
             db.queryList("select  *  from bs_diary ",BsDiary.class);
 ```
+
 - Map查询
 
 ```
             db.queryForMap("select  *  from bs_diary  where d_diaryId=?","42");
 ```
+
 - list<Map>查询
 
 ```
             db.queryListMap("select  *  from bs_diary ");
 ```
+
 - 分页查询
 
 ```                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
             db.queryPageData("select  *  from bs_diary",1,10,true);
 ```
+
 - 根据id更新
+
 ```
             BsDiary diary=db.findRowById(BsDiary.class,"42");
             diary.setDHead("update");
             db.updateById(BsDiary.class,diary);
 ```
+
 - 事务
 
 ```
@@ -253,6 +278,7 @@ public class StParm implements Serializable {
                 db.rollbackTransaction(transactionId);
             }
 ```
+
 ......待更新
 
 

@@ -144,21 +144,9 @@ public class DataSourceConfig {
         defaultDataSource.setRemoveAbandonedTimeout(DEFAULT_REMOVEABANDONEDTIMEOUT);
     }
 
-    public static void loadConfig(JSONObject config) throws IllegalAccessException, NoSuchFieldException {
+    public static void loadConfig(JSONObject config){
         if (null != config) {
-//            List<String> FieldNameList = EntityTool.getEntityFieldName(DruidDataSource.class);
-//            for (String key : config.keySet()) {
-//                for (String fieldName : FieldNameList) {
-//                    if (fieldName.equals(key)) {
-//                        Field field = defaultDataSource.getClass().getDeclaredField(fieldName);
-//                        boolean accessFlag = field.isAccessible();
-//                        field.setAccessible(true);
-//                        field.set(defaultDataSource, config.get(key));
-//                        field.setAccessible(accessFlag);
-//                        break;
-//                    }
-//                }
-//            }
+            defaultDataSource=config.toJavaObject(DruidDataSource.class);
         }
     }
 }
