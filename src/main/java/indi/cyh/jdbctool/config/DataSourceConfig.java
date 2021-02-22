@@ -144,9 +144,14 @@ public class DataSourceConfig {
         defaultDataSource.setRemoveAbandonedTimeout(DEFAULT_REMOVEABANDONEDTIMEOUT);
     }
 
-    public static void loadConfig(JSONObject config){
+    public static void loadConfig(JSONObject config) throws Exception {
         if (null != config) {
-            defaultDataSource=config.toJavaObject(DruidDataSource.class);
+            try {
+                defaultDataSource = config.toJavaObject(DruidDataSource.class);
+            } catch (Exception e) {
+                initDefaultDataSource();
+                throw new Exception("读取druid配置失败,请检查配置:" + e.getMessage());
+            }
         }
     }
 }
