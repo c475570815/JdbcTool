@@ -31,12 +31,12 @@ public class DataSourceFactory {
     /**
      * 默认主配数据库
      */
-    private static DruidDataSource mianDataSource;
+    private static JdbcDataBase mianDb;
 
     /**
      * 静态连接池
      */
-    private static final ConcurrentHashMap<DbInfo, DruidDataSource> listDbSource = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<DbInfo, JdbcDataBase> listDbSource = new ConcurrentHashMap<>();
 
 
     static {
@@ -56,7 +56,7 @@ public class DataSourceFactory {
      * @author cyh
      * 2020/7/16 21:10
      **/
-    private static DruidDataSource getDataSource(DbInfo entity, DbTemplate config) throws Exception {
+    private static JdbcDataBase getJdbcBaseByInfo(DbInfo entity, DbTemplate config) throws Exception {
         boolean hasTemplate = config != null;
         if (hasTemplate) {
             //使用给出的模板加载db连接实体类
@@ -66,11 +66,11 @@ public class DataSourceFactory {
             setDbInfoByDefaultUrlTemplate(entity);
         }
         //根据实体生成数据源
-        DruidDataSource dataSource = getExitDataSource(entity);
-        if (dataSource == null) {
-            dataSource = getNewDataSource(entity);
+        JdbcDataBase db = getExitJdbcBase(entity);
+        if (db == null) {
+            db = getNewJdbcBase(entity);
         }
-        return dataSource;
+        return db;
     }
 
     /**
@@ -82,8 +82,7 @@ public class DataSourceFactory {
      * 2020/7/16 21:46
      **/
     public static JdbcDataBase getDb(DbInfo entity) throws Exception {
-        DruidDataSource source = getDataSource(entity, null);
-        return new JdbcDataBase(source);
+        return getJdbcBaseByInfo(entity, null);
     }
 
     /**
@@ -95,7 +94,7 @@ public class DataSourceFactory {
      * 2020/7/16 21:13
      **/
     public static JdbcDataBase getMianDb() {
-        return new JdbcDataBase(mianDataSource);
+        return mianDb;
     }
 
     /**
@@ -106,7 +105,7 @@ public class DataSourceFactory {
      * @author CYH
      * @date 2020/7/10 0010 16:00
      **/
-    private static DruidDataSource getExitDataSource(DbInfo dbInfo) {
+    private static JdbcDataBase getExitJdbcBase(DbInfo dbInfo) {
         rl.lock();
         try {
             for (DbInfo info : listDbSource.keySet()) {
@@ -185,7 +184,7 @@ public class DataSourceFactory {
             if (defalutDatasource.size() > 0) {
                 DbInfo mainDb = defalutDatasource.get(0);
                 setDbInfoByDefaultUrlTemplate(mainDb);
-                mianDataSource = getNewDataSource(mainDb);
+                mianDb = getNewJdbcBase(mainDb);
             } else {
                 throw new Exception("配置文件中没有配置数据库信息!");
             }
@@ -203,7 +202,7 @@ public class DataSourceFactory {
      * @author CYH
      * @date 2020/7/10 0010 15:49
      **/
-    private static DruidDataSource getNewDataSource(DbInfo dbInfo) {
+    private static JdbcDataBase getNewJdbcBase(DbInfo dbInfo) {
         System.out.println("新增连接池-连接:  " + dbInfo.getConnectStr());
         DruidDataSource dataSource = new DruidDataSource();
         dataSource.setDriverClassName(dbInfo.getDriverClassName());
@@ -226,9 +225,10 @@ public class DataSourceFactory {
 
         }
         DataSourceConfig.setConfig(dataSource);
+        JdbcDataBase newDb = new JdbcDataBase(dataSource);
         wl.lock();
         try {
-            listDbSource.put(dbInfo, dataSource);
+            listDbSource.put(dbInfo, newDb);
         } catch (Exception e) {
             System.out.println("生成新连接池时异常: " + e.getMessage());
             dataSource.close();
@@ -237,7 +237,7 @@ public class DataSourceFactory {
             wl.unlock();
         }
         System.out.println("目前连接池数量: " + listDbSource.size());
-        return dataSource;
+        return newDb;
     }
 
     /**
