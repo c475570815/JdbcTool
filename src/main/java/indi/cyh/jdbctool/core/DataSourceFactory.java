@@ -204,7 +204,13 @@ public class DataSourceFactory {
      **/
     private static JdbcDataBase getNewJdbcBase(DbInfo dbInfo) {
         System.out.println("新增连接池-连接:  " + dbInfo.getConnectStr());
-        DruidDataSource dataSource = new DruidDataSource();
+        DruidDataSource dataSource;
+        //若DbInfo 中带有druid参数配置则不使用默认配置
+        if (dbInfo.getDruidDataSource() != null) {
+            dataSource = dbInfo.getDruidDataSource().cloneDruidDataSource();
+        } else {
+            dataSource = DataSourceConfig.getDefaultDataSource();
+        }
         dataSource.setDriverClassName(dbInfo.getDriverClassName());
         dataSource.setUrl(dbInfo.getConnectStr());
         dataSource.setUsername(dbInfo.getLoginName());
@@ -218,13 +224,11 @@ public class DataSourceFactory {
         }
         //监控设置
         try {
-            //,2
             dataSource.setFilters("stat,wall");
             dataSource.setEnable(true);
         } catch (Exception ignored) {
 
         }
-        DataSourceConfig.setConfig(dataSource);
         JdbcDataBase newDb = new JdbcDataBase(dataSource);
         wl.lock();
         try {

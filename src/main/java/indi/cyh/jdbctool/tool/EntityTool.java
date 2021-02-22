@@ -53,7 +53,7 @@ public class EntityTool {
     }
 
     /**
-     * 获取实体类上注解中国的所有字段名
+     * 获取实体类上注解类的所有字段名
      *
      * @param type
      * @return java.util.List<java.lang.String>

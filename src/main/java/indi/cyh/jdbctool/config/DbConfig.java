@@ -78,10 +78,11 @@ public class DbConfig {
                 addDbTmplate(dbTemplate);
             }
         }
+        //加载配置的数据源
         defalutDatasource = getdefalutDatasource(config.getJSONObject("dbConfig").getJSONArray("datasource"));
-
-
-        DataSourceConfig.loadConfig(config.getJSONObject("druid"));
+        //加载默认的druid配置
+        DataSourceConfig.loadConfig(config.getJSONObject("druidConfig"));
+        //生成主库操作对象
         DataSourceFactory.loadMainDbConfig();
     }
 

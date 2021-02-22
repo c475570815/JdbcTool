@@ -1,5 +1,7 @@
 package indi.cyh.jdbctool.modle;
 
+import com.alibaba.druid.pool.DruidDataSource;
+
 /**
  * @author gm
  * @className DbInfo
@@ -16,7 +18,43 @@ public class DbInfo {
     String pwd;
     String connectStr;
     String driverClassName;
+    DruidDataSource druidDataSource;
 
+    // 重写hashcode方法
+    @Override
+    public int hashCode() {
+        int result = ip.hashCode();
+        result = 17 * result + port.hashCode();
+        result = 17 * result + endParam.hashCode();
+        result = 17 * result + loginName.hashCode();
+        return result;
+    }
+
+    // 重写equals方法
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof DbInfo)) {
+            return false;
+        }
+        DbInfo dbInfo = (DbInfo) obj;
+        // 地址相等
+        if (this == dbInfo) {
+            return true;
+        }
+        return dbInfo.ip.equals(this.ip)
+                && dbInfo.port.equals(this.port)
+                && dbInfo.endParam.equals(this.endParam)
+                && dbInfo.loginName.equals(this.loginName);
+    }
+
+
+    public DruidDataSource getDruidDataSource() {
+        return druidDataSource;
+    }
+
+    public void setDruidDataSource(DruidDataSource druidDataSource) {
+        this.druidDataSource = druidDataSource;
+    }
 
     public String getSourceName() {
         return sourceName;
