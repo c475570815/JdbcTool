@@ -1,4 +1,4 @@
-package indi.cyh.jdbctool.toolinterface;
+package indi.cyh.jdbctool.annotation;
 
 
 import java.lang.annotation.ElementType;

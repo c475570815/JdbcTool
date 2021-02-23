@@ -1,9 +1,9 @@
 package indi.cyh.jdbctool.entity;
 
 
-import indi.cyh.jdbctool.toolinterface.FieldColumn;
-import indi.cyh.jdbctool.toolinterface.PrimaryField;
-import indi.cyh.jdbctool.toolinterface.TableName;
+import indi.cyh.jdbctool.annotation.FieldColumn;
+import indi.cyh.jdbctool.annotation.PrimaryKey;
+import indi.cyh.jdbctool.annotation.TableName;
 
 import java.io.Serializable;
 
@@ -11,7 +11,7 @@ import java.io.Serializable;
  * @author CYH
  */
 @TableName("ST_PARM")
-@PrimaryField("PARM_ID")
+@PrimaryKey("PARM_ID")
 public class StParm implements Serializable {
 
     /**

@@ -1,9 +1,8 @@
 package indi.cyh.jdbctool.tool;
 
-import indi.cyh.jdbctool.toolinterface.FieldColumn;
-import indi.cyh.jdbctool.toolinterface.PrimaryField;
-import indi.cyh.jdbctool.toolinterface.TableName;
-import org.springframework.lang.Nullable;
+import indi.cyh.jdbctool.annotation.FieldColumn;
+import indi.cyh.jdbctool.annotation.PrimaryKey;
+import indi.cyh.jdbctool.annotation.TableName;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -45,7 +44,7 @@ public class EntityTool {
      **/
     public static <T> String getEntityPrimaryField(Class<T> type) {
         try {
-            return type.getAnnotation(PrimaryField.class).value();
+            return type.getAnnotation(PrimaryKey.class).value();
         } catch (Exception e) {
             e.printStackTrace();
             return "";

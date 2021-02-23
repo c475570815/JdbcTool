@@ -1,12 +1,12 @@
 package indi.cyh.jdbctool.entity;
 
 
-import indi.cyh.jdbctool.toolinterface.FieldColumn;
-import indi.cyh.jdbctool.toolinterface.PrimaryField;
-import indi.cyh.jdbctool.toolinterface.TableName;
+import indi.cyh.jdbctool.annotation.FieldColumn;
+import indi.cyh.jdbctool.annotation.PrimaryKey;
+import indi.cyh.jdbctool.annotation.TableName;
 
 @TableName("bs_diary")
-@PrimaryField("d_diaryId")
+@PrimaryKey("d_diaryId")
 public class BsDiary {
   @FieldColumn("d_diaryId")
   private long dDiaryId;

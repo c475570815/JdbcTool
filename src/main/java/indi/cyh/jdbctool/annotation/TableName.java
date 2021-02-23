@@ -1,4 +1,4 @@
-package indi.cyh.jdbctool.toolinterface;
+package indi.cyh.jdbctool.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface PrimaryField {
+public @interface TableName {
     public String value();
 }
