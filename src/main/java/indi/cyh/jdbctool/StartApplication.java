@@ -7,7 +7,7 @@ import indi.cyh.jdbctool.core.JdbcDataBase;
 public class StartApplication {
     public static void main(String[] args) {
         try {
-            JdbcDataBase db = DataSourceFactory.getMianDb();
+            JdbcDataBase db = DataSourceFactory.getJdbcDataBase();
             String sql = "select d_head from bs_diary\n";
             System.out.println(String.join(",", db.querySingleTypeList(sql, String.class)));
 //          //  关联id单个删除

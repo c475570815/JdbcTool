@@ -1,0 +1,6 @@
+根据wood.json文件进行操作  首先对于wood.json 进行修改调整结构
+
+1. 首先加载文件转成json对象
+2. 使用druidConfig覆盖druid默认参数
+3. 创建模板信息 混合druid参数构成一个个模板DataSource信息集
+4. 根据datasource集合数据参照模板构成真正的druid连接池对象

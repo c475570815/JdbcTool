@@ -1,16 +1,20 @@
 package indi.cyh.jdbctool.modle;
 
 /**
- * @ClassName DbTemplate
+ * @ClassName DataBaseTemplate
  * @Description TODO
  * @Author gm
  * @Date 2020/7/16 21:39
  */
-public class DbTemplate {
-    String jdbcTemplate;
-    String driverClassName;
-    int port;
-    String type;
+public class DataBaseTemplate {
+
+    private String jdbcTemplate;
+
+    private String driverClassName;
+
+    private int port;
+
+    private String type;
 
     public String getJdbcTemplate() {
         return jdbcTemplate;

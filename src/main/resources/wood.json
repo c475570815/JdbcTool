@@ -1,38 +1,36 @@
 {
   "isDebugger": true,
-  "dbConfig": {
-    "datasource": [
-      {
-        "sourceName": "mainDb",
-        "type": "mysql",
-        "ip": "*.*.*.*",
-        "port": 3306,
-        "loginName": "*",
-        "pwd":  "*",
-        "endParam": "singlewood?serverTimezone=UTC"
-      }
-    ],
-    "templateList": [
-      {
-        "type": "mysql",
-        "driverClassName": "com.mysql.cj.jdbc.Driver",
-        "port": 3306,
-        "jdbcTemplate": "jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}"
-      },
-      {
-        "type": "oracle",
-        "driverClassName": "oracle.jdbc.driver.OracleDriver",
-        "port": 1521,
-        "jdbcTemplate": "jdbc:oracle:thin:@{{IP}}:{{PORT}}/{{END_PARAM}}"
-      },
-      {
-        "type": "postgres",
-        "driverClassName": "org.postgresql.Driver",
-        "port": 5432,
-        "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
-      }
-    ]
-  },
+  "dataBaseConfig": [
+    {
+      "sourceName": "mainDb",
+      "type": "mysql",
+      "ip": "127.0.0.1",
+      "port": 3306,
+      "loginName": "",
+      "pwd":  "",
+      "endParam": "test?serverTimezone=UTC"
+    }
+  ],
+  "dataBaseTemplate": [
+    {
+      "type": "mysql",
+      "driverClassName": "com.mysql.cj.jdbc.Driver",
+      "port": 3306,
+      "jdbcTemplate": "jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+    },
+    {
+      "type": "oracle",
+      "driverClassName": "oracle.jdbc.driver.OracleDriver",
+      "port": 1521,
+      "jdbcTemplate": "jdbc:oracle:thin:@{{IP}}:{{PORT}}/{{END_PARAM}}"
+    },
+    {
+      "type": "postgres",
+      "driverClassName": "org.postgresql.Driver",
+      "port": 5432,
+      "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+    }
+  ],
   "druidConfig": {
     "initialSize": 22,
     "maxActive": 30

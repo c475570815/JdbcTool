@@ -1,6 +1,6 @@
 package indi.cyh.jdbctool.tool;
 
-import indi.cyh.jdbctool.config.DbConfig;
+import indi.cyh.jdbctool.config.ConfigCenter;
 import org.springframework.lang.Nullable;
 
 
@@ -20,7 +20,7 @@ public class LogTool {
      * @date 2020/7/14 0014 16:46
      **/
     public void printTimeLost(long start) {
-        if(DbConfig.isIsDebugger()) {
+        if(ConfigCenter.isIsDebugger()) {
             long l = System.currentTimeMillis() - start;
             StringBuilder builder = new StringBuilder();
             long millis = 1;
@@ -52,7 +52,7 @@ public class LogTool {
      **/
     public   void printLog(String sql,String jdbcUrl, @Nullable Object... params) {
         //默认打开打印  当配置中设置了非调试模式则关闭打印
-        if (DbConfig.isIsDebugger()) {
+        if (ConfigCenter.isIsDebugger()) {
             StringBuffer buffer=new StringBuffer();
             buffer.append("\n##########################################JDBCTOOL##########################################\n");
             buffer.append("conStr:" +jdbcUrl+"\n");
