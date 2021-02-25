@@ -20,43 +20,41 @@
 
 ```
 {
-//是否调试模式 控制控制台日志打印输出
+  //是否调试模式 控制控制台日志打印输出
   "isDebugger": true,
-  "dbConfig": {
   //多数据源配置
-    "datasource": [
-      {
-        "sourceName": "mainDb",
-        "type": "mysql",
-        "ip": "*.*.*.*",
-        "port": 3306,
-        "loginName": "*",
-        "pwd":  "*",
-        "endParam": "singlewood?serverTimezone=UTC"
-      }
-    ],
-    //jdbc模板为运行中动态生成数据源提供模板支持
-    "templateList": [
-      {
-        "type": "mysql",
-        "driverClassName": "com.mysql.cj.jdbc.Driver",
-        "port": 3306,
-        "jdbcTemplate": "jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}"
-      },
-      {
-        "type": "oracle",
-        "driverClassName": "oracle.jdbc.driver.OracleDriver",
-        "port": 1521,
-        "jdbcTemplate": "jdbc:oracle:thin:@{{IP}}:{{PORT}}/{{END_PARAM}}"
-      },
-      {
-        "type": "postgres",
-        "driverClassName": "org.postgresql.Driver",
-        "port": 5432,
-        "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
-      }
-    ]
-  },
+  "dataBaseConfig": [
+    {
+      "sourceName": "mainDb",
+      "type": "mysql",
+      "ip": "106.52.167.158",
+      "port": 3306,
+      "loginName": "singlewood",
+      "pwd": "singlewood",
+      "endParam": "singlewood?serverTimezone=UTC"
+    }
+  ],
+  //jdbc模板为运行中动态生成数据源提供模板支持
+  "dataBaseTemplate": [
+    {
+      "type": "mysql",
+      "driverClassName": "com.mysql.cj.jdbc.Driver",
+      "port": 3306,
+      "jdbcTemplate": "jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+    },
+    {
+      "type": "oracle",
+      "driverClassName": "oracle.jdbc.driver.OracleDriver",
+      "port": 1521,
+      "jdbcTemplate": "jdbc:oracle:thin:@{{IP}}:{{PORT}}/{{END_PARAM}}"
+    },
+    {
+      "type": "postgres",
+      "driverClassName": "org.postgresql.Driver",
+      "port": 5432,
+      "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+    }
+  ],
   //通过配置druidConfig属性自定义默认druid配置 更多druid参数可自行百度
   "druidConfig": {
     "initialSize": 22,
@@ -70,7 +68,7 @@
 
 ```
 @TableName("ST_PARM")
-@PrimaryField("PARM_ID")
+@PrimaryKey("PARM_ID")
 public class StParm implements Serializable {
 
     /**
@@ -83,61 +81,6 @@ public class StParm implements Serializable {
      */
     @FieldColumn("CATEGORY")
     private String category;
-    /**
-     * 参数名称
-     */
-    @FieldColumn("NAME")
-    private String name;
-    /**
-     * 参数默认值
-     */
-    @FieldColumn("DEFAULT_VALUE")
-    private String defaultValue;
-    /**
-     * 参数当前值
-     */
-    @FieldColumn("NOW_VALUE")
-    private String nowValue;
-    /**
-     * 参数运行值
-     */
-    @FieldColumn("RUN_VALUE")
-    private String runValue;
-    /**
-     * 参数最小值
-     */
-    @FieldColumn("MIN_VALUE")
-    private String minValue;
-    /**
-     * 参数最大值
-     */
-    @FieldColumn("MAX_VALUE")
-    private String maxValue;
-    /**
-     * 参数格式
-     */
-    @FieldColumn("FORMAT")
-    private String format;
-    /**
-     * 备注
-     */
-    @FieldColumn("NOTE")
-    private String note;
-    /**
-     * 使用标志
-     */
-    @FieldColumn("STATE")
-    private String state;
-    /**
-     * 排序
-     */
-    @FieldColumn("IDX")
-    private String idx;
-    /**
-     * 系统编号
-     */
-    @FieldColumn("MIS_ID")
-    private String misId;
 }
 ```
 
@@ -147,41 +90,28 @@ public class StParm implements Serializable {
 
 ```
             //1.使用默认主配
-             JdbcDataBase db = DataSourceFactory.getMianDb();
+             JdbcDataBase db = DataSourceFactory.getJdbcDataBase();
             //2.使用配置名匹配加载
-             db=  DataSourceFactory.getDbBySourceName("mainDb");
-            //3.给出必要参数 依赖默认模板生成 
-            JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
-                setDbType("mysql");
+             JdbcDataBase db = DataSourceFactory.getJdbcDataBase("sourceName");
+            //3.依赖模板方式(可以通过ConfigCenter.addDataBaseTemplate动态添加模板)
+             DbInfo info = new DbInfo() {{
+                setSourceName("testDb");
+                setType("mysql");
+                setIp("*.*.*.*");
                 setPort(3306);
-                setLogoinName("***");
-                setPwd("***");
-                setIp("***");
-                setEndParam("singlewood");
-            }});
-
-           // 4.给出url  不依赖模板
-            JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
-                setConnectStr("jdbc:mysql://***:3306/singlewood");
-                setLogoinName("***");
-                setPwd("***");
-            }});
-
-           // 5.给出新模板 依赖模板生成
-            DataSourceFactory.addDbTmplate(new DbTemplate(){{
-                setUrlTemplate("jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}");
-                setPort(3306);
+                setLoginName("*");
+                setPwd("*");
+                setEndParam("singlewood?serverTimezone=UTC");
+            }};
+            JdbcDataBase db = DataSourceFactory.getJdbcDataBaseByInfo(info, true);
+            //4.不依赖任何配置模式方式
+            DbInfo  info = new DbInfo() {{
+                setConnectStr("jdbc:mysql://*.*.*.*:3306/singlewood?serverTimezone=UTC");
                 setDriverClassName("com.mysql.cj.jdbc.Driver");
-                setDbType("mysql-t");
-            }});
-            JdbcDataBase db =DataSourceFactory.getDb(new DbInfo(){{
-                setDbType("mysql-t");
-                setPort(3306);
-                setLogoinName("***");
-                setPwd("***");
-                setIp("***");
-                setEndParam("singlewood");
-            }});
+                setLoginName("*");
+                setPwd("*");
+            }};
+            JdbcDataBase db = DataSourceFactory.getJdbcDataBaseByInfo(info, false);
 ```
 
 2. 具体使用
