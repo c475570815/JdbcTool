@@ -195,7 +195,6 @@ db.updateById(BsDiary.class,diary);
 - 事务
 
 ```
-JdbcDataBase db = new JdbcDataBase(dbInfo, config);
 String transactionId = db.beginTransaction();
 try {
     // 新增单个实体
