@@ -47,6 +47,20 @@ public class DbInfo {
                 && dbInfo.loginName.equals(this.loginName);
     }
 
+    public DbInfo clone(){
+        DbInfo info=new DbInfo();
+        info.setSourceName(this.sourceName);
+        info.setType(this.type);
+        info.setIp(this.ip);
+        info.setPort(this.port);
+        info.setEndParam(this.endParam);
+        info.setLoginName(this.loginName);
+        info.setPwd(this.pwd);
+        info.setConnectStr(this.connectStr);
+        info.setDriverClassName(this.driverClassName);
+        info.setDruidDataSource(this.druidDataSource);
+        return  info;
+    }
 
     public DruidDataSource getDruidDataSource() {
         return druidDataSource;

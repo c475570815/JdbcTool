@@ -2,6 +2,7 @@ package indi.cyh.jdbctool.config;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.fastjson.JSONObject;
+
 import java.lang.reflect.Method;
 
 /**
@@ -11,7 +12,7 @@ import java.lang.reflect.Method;
  * @Description TODO
  * @Author gm
  * @Date 2020/12/17 21:44
- *
+ * <p>
  * 2021-02-23 改变一些变量的作用域 和 配置默认数据源和配置覆盖参数的一些操作
  * ----> 1. 参数作用域 public 到 private
  * ----> 2. 删除defaultDataSource变量和loadConfig方法改为getDataSource提供服务
@@ -102,6 +103,7 @@ public class DataSourceConfig {
         }
         return druidDataSource;
     }
+
     /**
      * 方法功能描述: 初始化数据源默认参数
      */
@@ -150,22 +152,17 @@ public class DataSourceConfig {
      * @param druid 数据源参数根据配置文件复写
      * @return void
      */
-    private static void coverConfig(DruidDataSource druidDataSource,JSONObject druid) throws Exception {
-        if (druidDataSource==null){
+    private static void coverConfig(DruidDataSource druidDataSource, JSONObject druid) throws Exception {
+        if (druidDataSource == null) {
             throw new Exception("druid dataSource init fail.....");
         }
-        if (druid !=null){
-           if (druid.keySet().size()>0){
-               Method[] methods = DruidDataSource.class.getMethods();
-               for (String key : druid.keySet()) {
-                   String methodName = "set"+key.substring(0, 1).toUpperCase() + key.substring(1);
-                   for (Method method : methods) {
-                      if ( method.getName().equals(methodName)){
-                          method.invoke(druidDataSource,druid.get(key));
-                      }
-                   }
-               }
-           }
+        if (null != druid) {
+            try {
+                druidDataSource = druid.toJavaObject(DruidDataSource.class);
+            } catch (Exception e) {
+                initDefaultDataSource();
+                throw new Exception("读取druid配置失败,请检查配置:" + e.getMessage());
+            }
         }
     }
 }

@@ -1,40 +1,56 @@
 package indi.cyh.jdbctool;
 
+import indi.cyh.jdbctool.config.ConfigCenter;
+import indi.cyh.jdbctool.config.TemplateConfig;
 import indi.cyh.jdbctool.core.DataSourceFactory;
 import indi.cyh.jdbctool.core.JdbcDataBase;
+import indi.cyh.jdbctool.modle.DataBaseTemplate;
+import indi.cyh.jdbctool.modle.DbInfo;
 
 
 public class StartApplication {
+
+
     public static void main(String[] args) {
+        String sql = "select d_head from bs_diary\n";
+
         try {
-            JdbcDataBase db = DataSourceFactory.getJdbcDataBase();
-            String sql = "select d_head from bs_diary\n";
+//            //从配置获取连接信息方式
+//            JdbcDataBase db = DataSourceFactory.getJdbcDataBase();
+//            System.out.println(String.join(",", db.querySingleTypeList(sql, String.class)));
+
+
+
+//            //依赖模板方式
+//            DataBaseTemplate mysql = new DataBaseTemplate() {{
+//                setJdbcTemplate("jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}");
+//                setPort(3306);
+//                setDriverClassName("com.mysql.cj.jdbc.Driver");
+//                setType("mysql-test");
+//            }};
+//            DbInfo info = new DbInfo() {{
+//                setSourceName("testDb");
+//                setType("mysql-test");
+//                setIp("106.52.167.158");
+//                setPort(3306);
+//                setLoginName("singlewood");
+//                setPwd("singlewood");
+//                setEndParam("singlewood?serverTimezone=UTC");
+//            }};
+//            ConfigCenter.addDataBaseTemplate(mysql);
+//            JdbcDataBase db = DataSourceFactory.getJdbcDataBaseByInfo(info, true);
+//            System.out.println(String.join(",", db.querySingleTypeList(sql, String.class)));
+
+
+            //不依赖任何模式方式
+            DbInfo  info = new DbInfo() {{
+                setConnectStr("jdbc:mysql://106.52.167.158:3306/singlewood?serverTimezone=UTC");
+                setDriverClassName("com.mysql.cj.jdbc.Driver");
+                setLoginName("singlewood");
+                setPwd("singlewood");
+            }};
+            JdbcDataBase db = DataSourceFactory.getJdbcDataBaseByInfo(info, false);
             System.out.println(String.join(",", db.querySingleTypeList(sql, String.class)));
-//          //  关联id单个删除
-//            db.delectbyId(BsDiary.class,"1");
-//           // 关联id多个删除
-//            db.delectbyIds(BsDiary.class, new ArrayList<Object>() {{
-//                add("1");
-//                add("2");
-//            }});
-//            //单一简单类型数据查询
-//            db.querySingleTypeResult("select  d_head  from bs_diary where d_diaryId=?",String.class,"42");
-//           // 多行简单类型数据查询
-//            db.querySingleTypeList("select  d_head  from bs_diary ",String.class);
-//           // 单一实体数据查询
-//            db.queryOneRow("select  * from bs_diary  where d_diaryId=?",BsDiary.class,"42");
-//           // 多行实体数据查询
-//            db.queryList("select  *  from bs_diary ",BsDiary.class);
-//           // Map查询
-//            db.queryForMap("select  *  from bs_diary  where d_diaryId=?","42");
-//          //  list查询
-//            db.queryListMap("select  *  from bs_diary ");
-//           // 分页查询
-//            db.queryPageDate("select  *  from bs_diary",1,10,true);
-//            //根据id更新
-//            BsDiary diary=db.findRowById(BsDiary.class,"42");
-//            diary.setDHead("update");
-//            db.updateById(BsDiary.class,diary);
         } catch (Exception ex) {
             ex.printStackTrace();
         }

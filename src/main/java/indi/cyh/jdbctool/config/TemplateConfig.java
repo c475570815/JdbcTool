@@ -30,8 +30,8 @@ public class TemplateConfig {
     /**
      * 默认模板创建
      */
-    private static Map<String, DataBaseTemplate> initDefaultDataBaseTemplate(){
-        Map<String, DataBaseTemplate> defaultUrlTemplateMap = new HashMap<String, DataBaseTemplate>();
+    private static Map<String, DataBaseTemplate> initDefaultDataBaseTemplate() {
+        Map<String, DataBaseTemplate> defaultUrlTemplateMap = new HashMap<>();
         DataBaseTemplate mysql = new DataBaseTemplate() {{
             setJdbcTemplate("jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}");
             setPort(3306);
@@ -78,9 +78,9 @@ public class TemplateConfig {
     /**
      * 添加 覆盖模板
      **/
-    private static void addDataBaseTemplate(Map<String, DataBaseTemplate> dataBaseTemplateMap,DataBaseTemplate template)  {
+    public static void addDataBaseTemplate(Map<String, DataBaseTemplate> dataBaseTemplateMap, DataBaseTemplate template) {
         //检查模板数据是否正确
-        boolean check= template.getJdbcTemplate().contains(IP) && template.getJdbcTemplate().contains(PORT) && template.getJdbcTemplate().contains(END_PARAM);
+        boolean check = template.getJdbcTemplate().contains(IP) && template.getJdbcTemplate().contains(PORT) && template.getJdbcTemplate().contains(END_PARAM);
         if (!check) {
             throw new RuntimeException("模板必须包含{{IP}}、{{PORT}}、{{END_PARAM}}");
         }
@@ -89,15 +89,14 @@ public class TemplateConfig {
 
     /**
      * 获取默认和配置的模板结果数据
+     *
      * @param array JSON数据
      * @return 结果
      */
-    public static Map<String, DataBaseTemplate> getDataBaseTemplate(JSONArray array){
-        Map<String, DataBaseTemplate> dataBaseTemplateMap = initDefaultDataBaseTemplate();
+    public static void getDataBaseTemplate(Map<String, DataBaseTemplate> dataBaseTemplateMap, JSONArray array) {
         List<DataBaseTemplate> dataBaseTemplateList = getDataBaseTemplateList(array);
         for (DataBaseTemplate dataBaseTemplate : dataBaseTemplateList) {
-            addDataBaseTemplate(dataBaseTemplateMap,dataBaseTemplate);
+            addDataBaseTemplate(dataBaseTemplateMap, dataBaseTemplate);
         }
-        return dataBaseTemplateMap;
     }
 }
