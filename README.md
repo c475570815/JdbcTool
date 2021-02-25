@@ -89,29 +89,29 @@ public class StParm implements Serializable {
 1. 初始化数据连接
 
 ```
-            //1.使用默认主配
-             JdbcDataBase db = DataSourceFactory.getJdbcDataBase();
-            //2.使用配置名匹配加载
-             JdbcDataBase db = DataSourceFactory.getJdbcDataBase("sourceName");
-            //3.依赖模板方式(可以通过ConfigCenter.addDataBaseTemplate动态添加模板)
-             DbInfo info = new DbInfo() {{
-                setSourceName("testDb");
-                setType("mysql");
-                setIp("*.*.*.*");
-                setPort(3306);
-                setLoginName("*");
-                setPwd("*");
-                setEndParam("singlewood?serverTimezone=UTC");
-            }};
-            JdbcDataBase db = DataSourceFactory.getJdbcDataBaseByInfo(info, true);
-            //4.不依赖任何配置模式方式
-            DbInfo  info = new DbInfo() {{
-                setConnectStr("jdbc:mysql://*.*.*.*:3306/singlewood?serverTimezone=UTC");
-                setDriverClassName("com.mysql.cj.jdbc.Driver");
-                setLoginName("*");
-                setPwd("*");
-            }};
-            JdbcDataBase db = DataSourceFactory.getJdbcDataBaseByInfo(info, false);
+//1.使用默认主配
+ JdbcDataBase db = DataSourceFactory.getJdbcDataBase();
+//2.使用配置名匹配加载
+ JdbcDataBase db = DataSourceFactory.getJdbcDataBase("sourceName");
+//3.依赖模板方式(可以通过ConfigCenter.addDataBaseTemplate动态添加模板)
+ DbInfo info = new DbInfo() {{
+    setSourceName("testDb");
+    setType("mysql");
+    setIp("*.*.*.*");
+    setPort(3306);
+    setLoginName("*");
+    setPwd("*");
+    setEndParam("singlewood?serverTimezone=UTC");
+}};
+JdbcDataBase db = DataSourceFactory.getJdbcDataBaseByInfo(info, true);
+//4.不依赖任何配置模式方式
+DbInfo  info = new DbInfo() {{
+    setConnectStr("jdbc:mysql://*.*.*.*:3306/singlewood?serverTimezone=UTC");
+    setDriverClassName("com.mysql.cj.jdbc.Driver");
+    setLoginName("*");
+    setPwd("*");
+}};
+JdbcDataBase db = DataSourceFactory.getJdbcDataBaseByInfo(info, false);
 ```
 
 2. 具体使用
@@ -119,94 +119,94 @@ public class StParm implements Serializable {
 - 新增单个实体(配合带本工具注解的实体类使用)
 
 ```
-            db.insert(BsDiary.class,new BsDiary(){{
-                setDHead("head");
-                ....
-            }});
+db.insert(BsDiary.class,new BsDiary(){{
+    setDHead("head");
+    ....
+}});
             
 ```
 
 - 关联id单个删除(配合带本工具注解的实体类使用)
 
 ```
-            db.delectbyId(BsDiary.class,"1");
+db.delectbyId(BsDiary.class,"1");
 ```
 
 - 关联id多个删除(配合带本工具注解的实体类使用)
 
 ```
-            db.delectbyIds(BsDiary.class, new ArrayList<>() {{
-                add("1");
-                add("2");
-                ...
-            }});
+db.delectbyIds(BsDiary.class, new ArrayList<>() {{
+    add("1");
+    add("2");
+    ...
+}});
 ```
 
 - 单一简单类型数据查询
 
 ```
-            db.querySingleTypeResult("select  head  from bs_diary where d_diaryId=?",String.class,"42");
+db.querySingleTypeResult("select  head  from bs_diary where d_diaryId=?",String.class,"42");
 ```
 
 - 多行简单类型数据查询
 
 ```
-            db.querySingleTypeList("select  head  from bs_diary ",String.class);
+db.querySingleTypeList("select  head  from bs_diary ",String.class);
 ```
 
 - 单一实体数据查询(配合带本工具注解的实体类使用)
 
 ```
-            db.queryOneRow("select  * from bs_diary  where d_diaryId=?",BsDiary.class,"42");
+db.queryOneRow("select  * from bs_diary  where d_diaryId=?",BsDiary.class,"42");
 ```
 
 - 多行实体数据查询(配合带本工具注解的实体类使用)
 
 ```
-            db.queryList("select  *  from bs_diary ",BsDiary.class);
+db.queryList("select  *  from bs_diary ",BsDiary.class);
 ```
 
 - Map查询
 
 ```
-            db.queryForMap("select  *  from bs_diary  where d_diaryId=?","42");
+db.queryForMap("select  *  from bs_diary  where d_diaryId=?","42");
 ```
 
 - list<Map>查询
 
 ```
-            db.queryListMap("select  *  from bs_diary ");
+db.queryListMap("select  *  from bs_diary ");
 ```
 
 - 分页查询
 
 ```                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
-            db.queryPageData("select  *  from bs_diary",1,10,true);
+db.queryPageData("select  *  from bs_diary",1,10,true);
 ```
 
 - 根据id更新
 
 ```
-            BsDiary diary=db.findRowById(BsDiary.class,"42");
-            diary.setDHead("update");
-            db.updateById(BsDiary.class,diary);
+BsDiary diary=db.findRowById(BsDiary.class,"42");
+diary.setDHead("update");
+db.updateById(BsDiary.class,diary);
 ```
 
 - 事务
 
 ```
-            JdbcDataBase db = new JdbcDataBase(dbInfo, config);
-            String transactionId = db.beginTransaction();
-            try {
-                // 新增单个实体
-                db.insert(BsDiary.class, new BsDiary() {{
-                    setDHead("head");
-                }});
-                throw  new Exception("eee");
-               // db.commitTransaction(transactionId);
-            }catch (Exception e){
-                db.rollbackTransaction(transactionId);
-            }
+JdbcDataBase db = new JdbcDataBase(dbInfo, config);
+String transactionId = db.beginTransaction();
+try {
+    // 新增单个实体
+    db.insert(BsDiary.class, new BsDiary() {{
+        setDHead("head");
+    }});
+    throw  new Exception("eee");
+   // db.commitTransaction(transactionId);
+}catch (Exception e){
+    db.rollbackTransaction(transactionId);
+}
 ```
 
 ......待更新
