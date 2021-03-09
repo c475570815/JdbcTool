@@ -17,6 +17,7 @@ import org.springframework.transaction.TransactionStatus;
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -98,6 +99,26 @@ public class JdbcDataBase {
      * 2020/7/16 21:16
      **/
     private final LogTool log = new LogTool();
+
+
+    @Override
+    public int hashCode() {
+        String conn = dataSource.getUrl();
+        return 17 * conn.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof JdbcDataBase)) {
+            return false;
+        }
+        JdbcDataBase db = (JdbcDataBase) obj;
+        // 地址相等
+        if (this == db) {
+            return true;
+        }
+        return db.dataSource.getUrl().equals(this.dataSource.getUrl());
+    }
 
     public JdbcDataBase(DruidDataSource dataSource) {
         this.dataSource = dataSource;

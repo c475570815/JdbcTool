@@ -10,6 +10,7 @@ import indi.cyh.jdbctool.tool.StringTool;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * DataSourceFactory
@@ -30,6 +31,19 @@ public class DataSourceFactory {
      * 静态连接池  DbInfo JdbcDataBase
      */
     private static final ConcurrentHashMap<DbInfo, JdbcDataBase> listDbSource = new ConcurrentHashMap<>();
+
+
+    /**
+     * 根据JdbcDataBase 获取 DbInfo
+     *
+     * @param db
+     * @return
+     */
+    public static DbInfo jdbcDataBaseGetDbInfo(JdbcDataBase db) {
+        return listDbSource.keySet().stream().filter(key ->
+            listDbSource.get(key).equals(db)
+        ).collect(Collectors.toList()).get(0);
+    }
 
     /**
      * 获取配置的主库(sourceName为mainDb的配置)
