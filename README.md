@@ -1,6 +1,6 @@
 # JdbcTool
 
-基于[idea](https://www.jetbrains.com/?from=jdbcTool) ![输入图片说明](https://images.gitee.com/uploads/images/2021/0630/160158_e0343ac3_688326.png "jetbrains.png")开发
+基于[idea](https://www.jetbrains.com/?from=jdbcTool) 开发
 #### 介绍
 
 依靠spring-jdbc的动态多源数据库操作工具
