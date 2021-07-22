@@ -68,7 +68,7 @@ public class DataSourceFactory {
     public static JdbcDataBase getJdbcDataBase(String name) {
         JdbcDataBase jdbcDataBase;
         DbInfo dbInfo = listDbSource.keySet().stream()
-                .filter(info -> info.getSourceName().equals(name))
+                .filter(info -> name.equals(info.getSourceName()))
                 .findFirst().orElse(null);
         if (dbInfo == null) {
             try {
@@ -141,7 +141,9 @@ public class DataSourceFactory {
         }
         if (db == null) {
             db = getNewJdbcDataBase(entity);
-            listDbSource.put(entity, db);
+            synchronized (listDbSource) {
+                listDbSource.put(entity, db);
+            }
         }
         return db;
     }
