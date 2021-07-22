@@ -130,7 +130,7 @@
                         <exclude>**/event/*</exclude>
                         <exclude>**/entity/*</exclude>
                         <!--排除测试使用的主函数-->
-                        <exclude>**/JdbcToolApplication.*</exclude>
+                        <exclude>**/StartApplication.*</exclude>
                         <exclude>**/*.yml</exclude>
                     </excludes>
                 </configuration>

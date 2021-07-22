@@ -141,6 +141,7 @@ public class DataSourceFactory {
         }
         if (db == null) {
             db = getNewJdbcDataBase(entity);
+            listDbSource.put(entity, db);
         }
         return db;
     }

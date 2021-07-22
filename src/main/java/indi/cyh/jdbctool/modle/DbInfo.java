@@ -23,9 +23,7 @@ public class DbInfo {
     // 重写hashcode方法
     @Override
     public int hashCode() {
-        int result = ip.hashCode();
-        result = 17 * result + port.hashCode();
-        result = 17 * result + endParam.hashCode();
+        int result = connectStr.hashCode();
         result = 17 * result + loginName.hashCode();
         return result;
     }
@@ -41,14 +39,11 @@ public class DbInfo {
         if (this == dbInfo) {
             return true;
         }
-        return dbInfo.ip.equals(this.ip)
-                && dbInfo.port.equals(this.port)
-                && dbInfo.endParam.equals(this.endParam)
-                && dbInfo.loginName.equals(this.loginName);
+        return dbInfo.connectStr.equals(this.connectStr) && dbInfo.loginName.equals(this.loginName);
     }
 
-    public DbInfo clone(){
-        DbInfo info=new DbInfo();
+    public DbInfo clone() {
+        DbInfo info = new DbInfo();
         info.setSourceName(this.sourceName);
         info.setType(this.type);
         info.setIp(this.ip);
@@ -59,7 +54,7 @@ public class DbInfo {
         info.setConnectStr(this.connectStr);
         info.setDriverClassName(this.driverClassName);
         info.setDruidDataSource(this.druidDataSource);
-        return  info;
+        return info;
     }
 
     public DruidDataSource getDruidDataSource() {
