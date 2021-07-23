@@ -54,7 +54,7 @@ public class DataSourceFactory {
     public static JdbcDataBase getJdbcDataBase(String name) {
         JdbcDataBase jdbcDataBase;
         DbInfo dbInfo = listDbSource.keySet().stream()
-                .filter(info -> info.getSourceName().equals(name))
+                .filter(info -> name.equals(info.getSourceName()))
                 .findFirst().orElse(null);
         if (dbInfo == null) {
             try {
