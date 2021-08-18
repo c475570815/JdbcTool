@@ -156,12 +156,17 @@ public class DataSourceConfig {
         if (druidDataSource == null) {
             throw new Exception("druid dataSource init fail.....");
         }
-        if (null != druid) {
-            try {
-                druidDataSource = druid.toJavaObject(DruidDataSource.class);
-            } catch (Exception e) {
-                initDefaultDataSource();
-                throw new Exception("读取druid配置失败,请检查配置:" + e.getMessage());
+        if (druid != null) {
+            if (druid.keySet().size() > 0) {
+                Method[] methods = DruidDataSource.class.getMethods();
+                for (String key : druid.keySet()) {
+                    String methodName = "set" + key.substring(0, 1).toUpperCase() + key.substring(1);
+                    for (Method method : methods) {
+                        if (method.getName().equals(methodName)) {
+                            method.invoke(druidDataSource, druid.get(key));
+                        }
+                    }
+                }
             }
         }
     }

@@ -42,8 +42,8 @@ public class DbInfo {
         return dbInfo.connectStr.equals(this.connectStr) && dbInfo.loginName.equals(this.loginName);
     }
 
-    public DbInfo clone(){
-        DbInfo info=new DbInfo();
+    public DbInfo clone() {
+        DbInfo info = new DbInfo();
         info.setSourceName(this.sourceName);
         info.setType(this.type);
         info.setIp(this.ip);
@@ -54,7 +54,7 @@ public class DbInfo {
         info.setConnectStr(this.connectStr);
         info.setDriverClassName(this.driverClassName);
         info.setDruidDataSource(this.druidDataSource);
-        return  info;
+        return info;
     }
 
     public DruidDataSource getDruidDataSource() {
