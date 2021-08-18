@@ -1,8 +1,10 @@
 package indi.cyh.jdbctool.config;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.fastjson.JSONObject;
 import indi.cyh.jdbctool.modle.DataBaseTemplate;
 import indi.cyh.jdbctool.modle.DbInfo;
+import indi.cyh.jdbctool.tool.StringTool;
 
 import java.util.*;
 
@@ -32,6 +34,11 @@ public class ConfigCenter {
         try {
             //获取 系统变量configFileName  没有就使用默认的wood.json
             String configFileName = System.getProperty("configFile");
+            System.out.println("从JVM变量获取配置文件名:" + configFileName);
+            if (StringTool.isEmpty(configFileName)) {
+                configFileName = System.getenv("JdbcToolConfigFile");
+                System.out.println("从环境变量获取配置文件名:" + configFileName);
+            }
             ConfigReader reader = ConfigReader.read(configFileName);
             if (reader == null) {
                 throw new RuntimeException("config file read error......");
