@@ -58,8 +58,7 @@ public class ConfigReader {
         ConfigReader reader=null;
         try {
             //获取 系统变量configFileName  没有就使用默认的wood.json
-            String fileName = (configFileName==null||"".equals(configFileName.trim())) ? "wood.json" : configFileName;
-            URL fileUrl = ConfigReader.class.getClassLoader().getResource(fileName);
+            URL fileUrl = ConfigReader.class.getClassLoader().getResource(configFileName);
             InputStream in = fileUrl.openStream();
             String configJsonString = FileTool.readToString(in);
             JSONObject config = JSONObject.parseObject(configJsonString);
