@@ -39,6 +39,10 @@ public class ConfigCenter {
                 configFileName = System.getenv("JdbcToolConfigFile");
                 System.out.println("从环境变量获取配置文件名:" + configFileName);
             }
+            if (StringTool.isEmpty(configFileName)) {
+                configFileName = "wood.json";
+                System.out.println("使用默认配置文件名:" + configFileName);
+            }
             ConfigReader reader = ConfigReader.read(configFileName);
             if (reader == null) {
                 throw new RuntimeException("config file read error......");

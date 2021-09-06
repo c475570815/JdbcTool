@@ -112,5 +112,23 @@ public class EntityTool {
         return filedNameArr;
     }
 
+    public static <T> String getPrimaryFeldValue(Class<? super T> entityType, T t) throws IllegalAccessException, NoSuchFieldException {
+        String primaryKeyName = getPrimaryFeldName(entityType);
+        Field field = entityType.getDeclaredField(primaryKeyName);
+        field.setAccessible(true);
+        return field.get(entityType).toString();
+    }
+
+    public static <T> String getPrimaryFeldName(Class<? super T> entityType) {
+        //获取主键字段
+        String primaryField = EntityTool.getEntityPrimaryField(entityType);
+        //实体类字段对应表字段
+        Map<String, String> fileToTable = EntityTool.getEntityFieldColumnMap(entityType);
+        //主键字段名称
+        return fileToTable.keySet().stream().filter(p -> {
+            return fileToTable.get(p).equals(primaryField);
+        }).findFirst().orElse(null);
+    }
+
 
 }
