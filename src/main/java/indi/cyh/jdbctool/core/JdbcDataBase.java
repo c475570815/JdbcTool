@@ -633,8 +633,10 @@ public class JdbcDataBase {
      **/
     public void executeDDLSql(String sql) {
         log.printLog(sql, dataSource.getRawJdbcUrl());
+        long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
         template.execute(sql);
+        log.printTimeLost(start);
     }
 
     /**
