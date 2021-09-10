@@ -99,8 +99,7 @@ public class LogTool {
 
     public static void printException(String logPre, boolean isPrintStackTrace, Exception e, @Nullable Object... params) {
         logPre = String.format(logPre, params);
-        System.out.printf(logPre + ":\n" + "%s%n", e.getMessage());
-        System.out.printf((logPre) + e.getMessage() + "%n", params);
+        System.out.printf(logPre + ":%n" + "%s%n", e.getMessage());
         if (isPrintStackTrace) {
             e.printStackTrace();
         }
