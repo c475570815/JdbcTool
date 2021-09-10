@@ -31,7 +31,8 @@
       "port": 3306,
       "loginName": "singlewood",
       "pwd": "singlewood",
-      "endParam": "singlewood?serverTimezone=UTC"
+      "endParam": "singlewood?serverTimezone=UTC",
+      "queryTimeOut": 1
     }
   ],
   //jdbc模板为运行中动态生成数据源提供模板支持
@@ -53,12 +54,19 @@
       "driverClassName": "org.postgresql.Driver",
       "port": 5432,
       "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+    },
+    {
+      "type": "sqlserver",
+      "driverClassName": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+      "port": 1433,
+      "jdbcTemplate": "jdbc:sqlserver://{{IP}}:{{PORT}};{{END_PARAM}}"
     }
   ],
   //通过配置druidConfig属性自定义默认druid配置 更多druid参数可自行百度
   "druidConfig": {
-    "initialSize": 22,
-    "maxActive": 30
+    "initialSize": 2,
+    "maxActive": 100,
+    "keepAlive": true
   }
 }
 
