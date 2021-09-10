@@ -157,7 +157,7 @@ public class DataConvertTool {
                     return convertToString(sourceTypeName, res);
             }
         } catch (Exception e) {
-            System.out.println("转换失败：sourceTypeName=" + sourceTypeName + ", targetType = " + targetType + ", res = " + res);
+            LogTool.printException("数值转换异常(%s---%s)", false, e,sourceTypeName,targetType);
             return null;
         }
 

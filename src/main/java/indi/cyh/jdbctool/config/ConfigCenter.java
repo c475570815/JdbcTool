@@ -1,9 +1,9 @@
 package indi.cyh.jdbctool.config;
 
 import com.alibaba.druid.pool.DruidDataSource;
-import com.alibaba.fastjson.JSONObject;
 import indi.cyh.jdbctool.modle.DataBaseTemplate;
 import indi.cyh.jdbctool.modle.DbInfo;
+import indi.cyh.jdbctool.tool.LogTool;
 import indi.cyh.jdbctool.tool.StringTool;
 
 import java.util.*;
@@ -56,8 +56,7 @@ public class ConfigCenter {
             //第三配置好 数据库信息
             defalutDbInfos = DataBaseInfoConfig.getDataBaseInfo(reader.getDataBaseConfig());
         } catch (Exception e) {
-            System.out.println("读取配置文件时出错!");
-            e.printStackTrace();
+            LogTool.printException("读取配置文件时出错", true, e);
         }
     }
 

@@ -31,7 +31,7 @@ public class DataSourceConfig {
     /**
      * 最大连接数
      */
-    private static int DEFAULT_MAXACTIVE = 20;
+    private static int DEFAULT_MAXACTIVE = 50;
 
     /**
      * 从连接池获取连接等待超时的时间
@@ -75,11 +75,11 @@ public class DataSourceConfig {
     /**
      * 打开PSCache，并且指定每个连接上PSCache的大小，Oracle等支持游标的数据库，打开此开关，会以数量级提升性能，具体查阅PSCache相关资料
      */
-    private static boolean DEFAULT_POOLPREPAREDSTATEMENTS = false;
+    private static boolean DEFAULT_POOLPREPAREDSTATEMENTS = true;
     /**
      * 连接泄露检查，打开removeAbandoned功能 , 连接从连接池借出后，长时间不归还，将触发强制回连接。回收周期随timeBetweenEvictionRunsMillis进行，如果连接为从连接池借出状态，并且未执行任何sql，并且从借出时间起已超过removeAbandonedTimeout时间，则强制归还连接到连接池中。
      */
-    private static boolean DEFAULT_REMOVEABANDONED = true;
+    private static boolean DEFAULT_REMOVEABANDONED = false;
 
     /**
      * 打开后，增强timeBetweenEvictionRunsMillis的周期性连接检查，minIdle内的空闲连接，每次检查强制验证连接有效性.

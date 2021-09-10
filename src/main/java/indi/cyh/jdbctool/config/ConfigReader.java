@@ -3,6 +3,7 @@ package indi.cyh.jdbctool.config;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import indi.cyh.jdbctool.tool.FileTool;
+import indi.cyh.jdbctool.tool.LogTool;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -76,8 +77,7 @@ public class ConfigReader {
                 reader.druidConfig=config.getJSONObject("druidConfig");
             }
         } catch (Exception e) {
-            System.out.println("读取配置文件时出错!");
-            e.printStackTrace();
+            LogTool.printException("读取配置文件时出错", true, e);
         }
         return reader;
     }
