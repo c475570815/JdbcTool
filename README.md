@@ -29,10 +29,10 @@
     {
       "sourceName": "mainDb",
       "type": "mysql",
-      "ip": "106.52.167.158",
+      "ip": "*",
       "port": 3306,
-      "loginName": "singlewood",
-      "pwd": "singlewood",
+      "loginName": "*",
+      "pwd": "*",
       "endParam": "singlewood?serverTimezone=UTC"
     }
   ],
