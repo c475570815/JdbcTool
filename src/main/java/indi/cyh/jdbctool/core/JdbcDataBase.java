@@ -7,6 +7,7 @@ import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
 import indi.cyh.jdbctool.tool.LogTool;
 import indi.cyh.jdbctool.tool.StringTool;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -104,7 +105,9 @@ public class JdbcDataBase {
     @Override
     public int hashCode() {
         String conn = dataSource.getUrl();
-        return 17 * conn.hashCode();
+        String loginName = dataSource.getUsername();
+        String pwd = dataSource.getPassword();
+        return 17 * conn.hashCode() * loginName.hashCode() * pwd.hashCode();
     }
 
     @Override
@@ -156,8 +159,10 @@ public class JdbcDataBase {
         T t = null;
         try {
             t = template.queryForObject(sql, requiredType, params);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
-            LogTool.printException("查询为空或者异常", false, e);
+            LogTool.printException(this, "查询为空或者异常", true, e);
         }
         log.printTimeLost(start);
         return t;
@@ -197,8 +202,10 @@ public class JdbcDataBase {
         T t = null;
         try {
             t = template.queryForObject(sql, new JdbcRowMapper<>(requiredType), params);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
-            LogTool.printException("查询为空或者异常", false, e);
+            LogTool.printException(this, "查询为空或者异常", true, e);
         }
         log.printTimeLost(start);
         return t;
@@ -221,8 +228,10 @@ public class JdbcDataBase {
         List<T> t = new ArrayList<>();
         try {
             t = template.query(sql, new JdbcRowMapper<>(requiredType), params);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
-            LogTool.printException("查询为空或者异常", false, e);
+            LogTool.printException(this, "查询为空或者异常", true, e);
         }
         log.printTimeLost(start);
         return t;
@@ -244,8 +253,10 @@ public class JdbcDataBase {
         Map<String, Object> map = null;
         try {
             map = template.queryForMap(sql, params);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
-            LogTool.printException("查询为空或者异常", false, e);
+            LogTool.printException(this, "查询为空或者异常", true, e);
         }
         log.printTimeLost(start);
         return map;
@@ -266,8 +277,10 @@ public class JdbcDataBase {
         List<Map<String, Object>> list = new ArrayList<>();
         try {
             list = template.queryForList(sql, params);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
-            LogTool.printException("查询为空或者异常", false, e);
+            LogTool.printException(this, "查询为空或者异常", true, e);
         }
         log.printTimeLost(start);
         return list;
@@ -571,7 +584,7 @@ public class JdbcDataBase {
             TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
             String transactionId = UUID.randomUUID().toString();
             transcationMap.put(transactionId, transactionStatus);
-            LogTool.printLog("开启事务:%s",transactionId);
+            LogTool.printLog("开启事务:%s", transactionId);
             return transactionId;
         } catch (Exception e) {
             throw new Exception("事务开启异常:" + e.getMessage());
@@ -591,9 +604,9 @@ public class JdbcDataBase {
             try {
                 transactionManager.commit(transcationMap.get(transactionId));
                 transcationMap.remove(transactionId);
-                LogTool.printLog("事务已提交:%s",transactionId);
+                LogTool.printLog("事务已提交:%s", transactionId);
             } catch (Exception e) {
-                LogTool.printException("事务提交异常%s", true, e,transactionId);
+                LogTool.printException("事务提交异常%s", true, e, transactionId);
             }
         } else {
             System.out.println("事务提交异常--错误的transactionId:" + transactionId);
@@ -615,7 +628,7 @@ public class JdbcDataBase {
                 transactionManager.rollback(transcationMap.get(transactionId));
                 transcationMap.remove(transactionId);
             } catch (Exception e) {
-                LogTool.printException("事务回归异常%s", true, e,transactionId);
+                LogTool.printException("事务回归异常%s", true, e, transactionId);
             }
         } else {
             System.out.println("事务回归异常--错误的transactionId:" + transactionId);

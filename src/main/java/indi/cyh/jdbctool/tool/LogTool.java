@@ -1,6 +1,9 @@
 package indi.cyh.jdbctool.tool;
 
 import indi.cyh.jdbctool.config.ConfigCenter;
+import indi.cyh.jdbctool.core.DataSourceFactory;
+import indi.cyh.jdbctool.core.JdbcDataBase;
+import indi.cyh.jdbctool.modle.DbInfo;
 import org.springframework.lang.Nullable;
 
 
@@ -99,7 +102,25 @@ public class LogTool {
 
     public static void printException(String logPre, boolean isPrintStackTrace, Exception e, @Nullable Object... params) {
         logPre = String.format(logPre, params);
+        System.out.println("--");
+        System.out.println("--");
         System.out.printf(logPre + ":%n" + "%s%n", e.getMessage());
+        System.out.println("--");
+        System.out.println("--");
+        if (isPrintStackTrace) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void printException(JdbcDataBase db, String logPre, boolean isPrintStackTrace, Exception e, @Nullable Object... params) {
+        logPre = String.format(logPre, params);
+        DbInfo info = DataSourceFactory.getDbInfoByJdbcDataBase(db);
+        System.out.println("--");
+        System.out.println("--");
+        System.out.printf(logPre + ":%n" + "出错连接%s---用户名:%s%n", info.getConnectStr(),info.getLoginName());
+        System.out.println(e.getMessage());
+        System.out.println("--");
+        System.out.println("--");
         if (isPrintStackTrace) {
             e.printStackTrace();
         }

@@ -244,8 +244,6 @@ public class DataSourceFactory {
      * @date 2021/9/9 16:19
      **/
         public static DbInfo getDbInfoByJdbcDataBase(JdbcDataBase jdbcDataBase) {
-        return listDbSource.keySet().stream().filter((p) -> {
-            return listDbSource.get(p).hashCode() == jdbcDataBase.hashCode();
-        }).findFirst().orElse(null);
+        return listDbSource.keySet().stream().filter((p) -> listDbSource.get(p).equals(jdbcDataBase)).findFirst().orElse(null);
     }
 }
