@@ -113,7 +113,7 @@ public class StParm implements Serializable {
     setEndParam("singlewood?serverTimezone=UTC");
 }};
 JdbcDataBase db = DataSourceFactory.getJdbcDataBaseByInfo(info, true);
-//4.不依赖任何配置模式方式
+//4.不依赖配置模板方式
 DbInfo  info = new DbInfo() {{
     setConnectStr("jdbc:mysql://*.*.*.*:3306/singlewood?serverTimezone=UTC");
     setDriverClassName("com.mysql.cj.jdbc.Driver");
