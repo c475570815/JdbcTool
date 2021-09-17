@@ -6,6 +6,7 @@ import indi.cyh.jdbctool.config.TemplateConfig;
 import indi.cyh.jdbctool.modle.DataBaseTemplate;
 import indi.cyh.jdbctool.modle.DbInfo;
 import indi.cyh.jdbctool.tool.JdbcUrlTool;
+import indi.cyh.jdbctool.tool.LogTool;
 import indi.cyh.jdbctool.tool.StringTool;
 
 import java.util.*;
@@ -41,7 +42,7 @@ public class DataSourceFactory {
      */
     public static DbInfo jdbcDataBaseGetDbInfo(JdbcDataBase db) {
         return listDbSource.keySet().stream().filter(key ->
-            listDbSource.get(key).equals(db)
+                listDbSource.get(key).equals(db)
         ).collect(Collectors.toList()).get(0);
     }
 
@@ -107,7 +108,7 @@ public class DataSourceFactory {
     }
 
     /**
-     * 过sourceName获取一个JdbcDataBase实例
+     * 动态生成一个JdbcDataBase实例
      *
      * @param entity
      * @return com.alibaba.druid.pool.DruidDataSource
@@ -131,13 +132,13 @@ public class DataSourceFactory {
         try {
             for (DbInfo info : listDbSource.keySet()) {
                 if (DbInfo.equals(info, entity)) {
-                    System.out.println("获取到已有连接池:" + info.getConnectStr());
-                    System.out.println("目前连接池数量: " + listDbSource.size());
+                    LogTool.printLog("获取到已有连接池:%s",info.getConnectStr());
+                    LogTool.printLog("目前连接池数量:%d",listDbSource.size());
                     db = listDbSource.get(info);
                 }
             }
         } catch (Exception e) {
-            System.out.println("获取已有连接池时异常: " + e.getMessage());
+            LogTool.printException("获取已有连接池时异常", true, e);
         }
         if (db == null) {
             db = getNewJdbcDataBase(entity);
@@ -205,7 +206,7 @@ public class DataSourceFactory {
      * @date 2020/7/10 0010 15:49
      **/
     private static JdbcDataBase getNewJdbcDataBase(DbInfo dbInfo) {
-        System.out.println("新增连接池-连接:  " + dbInfo.getConnectStr());
+        LogTool.printLog("新增连接池-连接:%s",dbInfo.getConnectStr());
         DruidDataSource dataSource = ConfigCenter.getDefaultDataSource();
         dataSource.setDriverClassName(dbInfo.getDriverClassName());
         dataSource.setUrl(dbInfo.getConnectStr());
@@ -225,10 +226,24 @@ public class DataSourceFactory {
         } catch (Exception ignored) {
 
         }
-        JdbcDataBase newDb = new JdbcDataBase(dataSource);
-        if (ConfigCenter.isIsDebugger()) {
-            System.out.println("目前连接池数量: " + listDbSource.size());
+        //设置查询超时
+        if (dbInfo.getQueryTimeOut() != -1) {
+            dataSource.setCheckExecuteTime(true);
+            dataSource.setQueryTimeout(dbInfo.getQueryTimeOut());
         }
+        JdbcDataBase newDb = new JdbcDataBase(dataSource);
+        LogTool.printLog("目前连接池数量:%d",listDbSource.size());
         return newDb;
+    }
+
+    /**
+     * 根据JdbcDataBase查询对应的DbInfo
+     * @param jdbcDataBase
+     * @return indi.cyh.jdbctool.modle.DbInfo
+     * @author CYH
+     * @date 2021/9/9 16:19
+     **/
+        public static DbInfo getDbInfoByJdbcDataBase(JdbcDataBase jdbcDataBase) {
+        return listDbSource.keySet().stream().filter((p) -> listDbSource.get(p).equals(jdbcDataBase)).findFirst().orElse(null);
     }
 }

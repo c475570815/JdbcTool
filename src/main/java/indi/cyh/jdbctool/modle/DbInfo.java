@@ -18,6 +18,8 @@ public class DbInfo {
     String pwd;
     String connectStr;
     String driverClassName;
+    //秒
+    int queryTimeOut = -1;
     DruidDataSource druidDataSource;
 
     // 重写hashcode方法
@@ -59,6 +61,14 @@ public class DbInfo {
 
     public DruidDataSource getDruidDataSource() {
         return druidDataSource;
+    }
+
+    public int getQueryTimeOut() {
+        return queryTimeOut;
+    }
+
+    public void setQueryTimeOut(int queryTimeOut) {
+        this.queryTimeOut = queryTimeOut;
     }
 
     public void setDruidDataSource(DruidDataSource druidDataSource) {

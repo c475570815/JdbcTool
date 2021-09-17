@@ -1,11 +1,13 @@
 package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import indi.cyh.jdbctool.config.ConfigCenter;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
 import indi.cyh.jdbctool.tool.LogTool;
 import indi.cyh.jdbctool.tool.StringTool;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -17,7 +19,6 @@ import org.springframework.transaction.TransactionStatus;
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -104,7 +105,9 @@ public class JdbcDataBase {
     @Override
     public int hashCode() {
         String conn = dataSource.getUrl();
-        return 17 * conn.hashCode();
+        String loginName = dataSource.getUsername();
+        String pwd = dataSource.getPassword();
+        return 17 * conn.hashCode() * loginName.hashCode() * pwd.hashCode();
     }
 
     @Override
@@ -134,6 +137,7 @@ public class JdbcDataBase {
      **/
     public JdbcTemplate getJdbcTemplate() {
         JdbcTemplate template = new JdbcTemplate();
+        setQueryTimeOut(template);
         template.setDataSource(this.dataSource);
         return template;
     }
@@ -149,14 +153,16 @@ public class JdbcDataBase {
      * @date 2020/5/29 0029 16:44
      **/
     public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.printSqlLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
         T t = null;
         try {
             t = template.queryForObject(sql, requiredType, params);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
-            System.out.println("查询为空或者异常:" + e.getMessage());
+            LogTool.printException(this, "查询为空或者异常", true, e);
         }
         log.printTimeLost(start);
         return t;
@@ -172,7 +178,7 @@ public class JdbcDataBase {
      * @date 2020/7/10 0010 17:05
      **/
     public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.printSqlLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         List<T> t = getJdbcTemplate().query(sql, params, (resultSet, i) -> (T) resultSet.getObject(1));
         log.printTimeLost(start);
@@ -190,14 +196,16 @@ public class JdbcDataBase {
      * 2020/4/11 15:41
      **/
     public <T> T queryOneRow(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.printSqlLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
         T t = null;
         try {
             t = template.queryForObject(sql, new JdbcRowMapper<>(requiredType), params);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
-            System.out.println("查询为空或者异常:" + e.getMessage());
+            LogTool.printException(this, "查询为空或者异常", true, e);
         }
         log.printTimeLost(start);
         return t;
@@ -214,14 +222,16 @@ public class JdbcDataBase {
      * 2020/5/28 22:12
      **/
     public <T> List<T> queryList(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.printSqlLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
         List<T> t = new ArrayList<>();
         try {
             t = template.query(sql, new JdbcRowMapper<>(requiredType), params);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
-            System.out.println("查询为空或者异常:" + e.getMessage());
+            LogTool.printException(this, "查询为空或者异常", true, e);
         }
         log.printTimeLost(start);
         return t;
@@ -237,14 +247,16 @@ public class JdbcDataBase {
      * 2020/5/28 22:12
      **/
     public Map<String, Object> queryForMap(String sql, @Nullable Object... params) {
-        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.printSqlLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
         Map<String, Object> map = null;
         try {
             map = template.queryForMap(sql, params);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
-            System.out.println("查询为空或者异常:" + e.getMessage());
+            LogTool.printException(this, "查询为空或者异常", true, e);
         }
         log.printTimeLost(start);
         return map;
@@ -259,14 +271,16 @@ public class JdbcDataBase {
      * 2020/4/11 18:11
      **/
     public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
-        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.printSqlLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JdbcTemplate template = getJdbcTemplate();
         List<Map<String, Object>> list = new ArrayList<>();
         try {
             list = template.queryForList(sql, params);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
-            System.out.println("查询为空或者异常:" + e.getMessage());
+            LogTool.printException(this, "查询为空或者异常", true, e);
         }
         log.printTimeLost(start);
         return list;
@@ -384,7 +398,7 @@ public class JdbcDataBase {
      * 2020/4/11 18:05
      **/
     public int executeDMLSql(String sql, @Nullable Object... params) {
-        log.printLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.printSqlLog(sql, dataSource.getRawJdbcUrl(), params);
         JdbcTemplate template = getJdbcTemplate();
         return template.update(sql, params);
     }
@@ -436,7 +450,7 @@ public class JdbcDataBase {
                 }
                 return ps;
             }, keyHolder);
-            log.printLog(sql, dataSource.getRawJdbcUrl(), params);
+            log.printSqlLog(sql, dataSource.getRawJdbcUrl(), params);
             return Objects.requireNonNull(keyHolder.getKey()).intValue();
         } else {
             executeDMLSql(sql, params);
@@ -570,7 +584,7 @@ public class JdbcDataBase {
             TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
             String transactionId = UUID.randomUUID().toString();
             transcationMap.put(transactionId, transactionStatus);
-            System.out.println("开启事务: " + transactionId);
+            LogTool.printLog("开启事务:%s", transactionId);
             return transactionId;
         } catch (Exception e) {
             throw new Exception("事务开启异常:" + e.getMessage());
@@ -590,10 +604,9 @@ public class JdbcDataBase {
             try {
                 transactionManager.commit(transcationMap.get(transactionId));
                 transcationMap.remove(transactionId);
-                System.out.println("事务已提交: " + transactionId);
+                LogTool.printLog("事务已提交:%s", transactionId);
             } catch (Exception e) {
-                System.out.println("事务提交异常" + transactionId + ": " + e.getMessage());
-                e.printStackTrace();
+                LogTool.printException("事务提交异常%s", true, e, transactionId);
             }
         } else {
             System.out.println("事务提交异常--错误的transactionId:" + transactionId);
@@ -615,8 +628,7 @@ public class JdbcDataBase {
                 transactionManager.rollback(transcationMap.get(transactionId));
                 transcationMap.remove(transactionId);
             } catch (Exception e) {
-                System.out.println("事务回归异常" + transactionId + ": " + e.getMessage());
-                e.printStackTrace();
+                LogTool.printException("事务回归异常%s", true, e, transactionId);
             }
         } else {
             System.out.println("事务回归异常--错误的transactionId:" + transactionId);
@@ -632,7 +644,7 @@ public class JdbcDataBase {
      * @date 2020/5/15 0015 16:34
      **/
     public void executeDDLSql(String sql) {
-        log.printLog(sql, dataSource.getRawJdbcUrl());
+        log.printSqlLog(sql, dataSource.getRawJdbcUrl());
         JdbcTemplate template = getJdbcTemplate();
         template.execute(sql);
     }
@@ -647,5 +659,20 @@ public class JdbcDataBase {
      **/
     public DataSource getDataSource() {
         return this.dataSource;
+    }
+
+    /**
+     * 查询 当前对象对应的db信息 配置查询超时时间
+     *
+     * @param template
+     * @return void
+     * @author CYH
+     * @date 2021/9/9 16:22
+     **/
+    private void setQueryTimeOut(JdbcTemplate template) {
+        DbInfo info = DataSourceFactory.getDbInfoByJdbcDataBase(this);
+        if (info.getQueryTimeOut() != -1) {
+            template.setQueryTimeout(info.getQueryTimeOut());
+        }
     }
 }

@@ -29,7 +29,7 @@ public class EntityTool {
         try {
             return type.getAnnotation(TableName.class).value();
         } catch (Exception e) {
-            e.printStackTrace();
+            LogTool.printException("获取实体类(%s)表名异常", true, e, type.toString());
             return "";
         }
     }
@@ -46,7 +46,7 @@ public class EntityTool {
         try {
             return type.getAnnotation(PrimaryKey.class).value();
         } catch (Exception e) {
-            e.printStackTrace();
+            LogTool.printException("获取实体类(%s)主键异常", true, e, type.toString());
             return "";
         }
     }
@@ -60,17 +60,16 @@ public class EntityTool {
      * @date 2020/5/27 0027 11:35
      **/
     public static <T> List<String> getEntityFieldList(Class<T> type) {
+        List<String> list = new ArrayList<>();
         try {
-            List<String> list = new ArrayList<>();
             Field[] fields = type.getDeclaredFields();
             for (Field field : fields) {
                 list.add(field.getAnnotation(FieldColumn.class).value());
             }
-            return list;
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            LogTool.printException("获取实体类(%s)字段异常", true, e, type.toString());
         }
+        return list;
     }
 
     /**
@@ -82,17 +81,16 @@ public class EntityTool {
      * @date 2020/5/27 0027 11:35
      **/
     public static <T> Map<String, String> getEntityFieldColumnMap(Class<T> type) {
+        Map<String, String> map = new HashMap<>();
         try {
-            Map<String, String> map = new HashMap<String, String>();
             Field[] fields = type.getDeclaredFields();
             for (Field field : fields) {
                 map.put(field.getName(), field.getAnnotation(FieldColumn.class).value());
             }
-            return map;
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            LogTool.printException("获取实体类(%s)对应表字段异常", true, e, type.toString());
         }
+        return map;
     }
 
     /**
@@ -110,6 +108,24 @@ public class EntityTool {
             filedNameArr.add(field.getName());
         }
         return filedNameArr;
+    }
+
+    public static <T> String getPrimaryFeldValue(Class<? super T> entityType, T t) throws IllegalAccessException, NoSuchFieldException {
+        String primaryKeyName = getPrimaryFeldName(entityType);
+        Field field = entityType.getDeclaredField(primaryKeyName);
+        field.setAccessible(true);
+        return field.get(entityType).toString();
+    }
+
+    public static <T> String getPrimaryFeldName(Class<? super T> entityType) {
+        //获取主键字段
+        String primaryField = EntityTool.getEntityPrimaryField(entityType);
+        //实体类字段对应表字段
+        Map<String, String> fileToTable = EntityTool.getEntityFieldColumnMap(entityType);
+        //主键字段名称
+        return fileToTable.keySet().stream().filter(p -> {
+            return fileToTable.get(p).equals(primaryField);
+        }).findFirst().orElse(null);
     }
 
 

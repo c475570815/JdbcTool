@@ -3,12 +3,31 @@
   "dataBaseConfig": [
     {
       "sourceName": "mainDb",
-      "type": "mysql",
-      "ip": "127.0.0.1",
-      "port": 3306,
-      "loginName": "",
-      "pwd":  "",
-      "endParam": "test?serverTimezone=UTC"
+      "type": "oracle",
+      "ip": "*",
+      "port": 1521,
+      "loginName": "*",
+      "pwd": "*",
+      "endParam": "*",
+      "queryTimeOut": 1
+    },
+    {
+      "sourceName": "yzt2000db",
+      "type": "postgres",
+      "ip": "*",
+      "port": 5432,
+      "loginName": "*",
+      "pwd": "*",
+      "endParam": "*"
+    },
+    {
+      "sourceName": "mainDb",
+      "type": "sqlserver",
+      "ip": "*",
+      "port": 1433,
+      "loginName": "*",
+      "pwd": "*",
+      "endParam": "database=*"
     }
   ],
   "dataBaseTemplate": [
@@ -20,7 +39,7 @@
     },
     {
       "type": "oracle",
-      "driverClassName": "oracle.jdbc.driver.OracleDriver",
+      "driverClassName": "oracle.jdbc.OracleDriver",
       "port": 1521,
       "jdbcTemplate": "jdbc:oracle:thin:@{{IP}}:{{PORT}}/{{END_PARAM}}"
     },
@@ -29,10 +48,17 @@
       "driverClassName": "org.postgresql.Driver",
       "port": 5432,
       "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+    },
+    {
+      "type": "sqlserver",
+      "driverClassName": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+      "port": 1433,
+      "jdbcTemplate": "jdbc:sqlserver://{{IP}}:{{PORT}};{{END_PARAM}}"
     }
   ],
   "druidConfig": {
-    "initialSize": 22,
-    "maxActive": 30
+    "initialSize": 2,
+    "maxActive": 100,
+    "keepAlive": true
   }
 }

@@ -3,6 +3,7 @@ package indi.cyh.jdbctool.config;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import indi.cyh.jdbctool.tool.FileTool;
+import indi.cyh.jdbctool.tool.LogTool;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -58,8 +59,7 @@ public class ConfigReader {
         ConfigReader reader=null;
         try {
             //获取 系统变量configFileName  没有就使用默认的wood.json
-            String fileName = (configFileName==null||"".equals(configFileName.trim())) ? "wood.json" : configFileName;
-            URL fileUrl = ConfigReader.class.getClassLoader().getResource(fileName);
+            URL fileUrl = ConfigReader.class.getClassLoader().getResource(configFileName);
             InputStream in = fileUrl.openStream();
             String configJsonString = FileTool.readToString(in);
             JSONObject config = JSONObject.parseObject(configJsonString);
@@ -77,8 +77,7 @@ public class ConfigReader {
                 reader.druidConfig=config.getJSONObject("druidConfig");
             }
         } catch (Exception e) {
-            System.out.println("读取配置文件时出错!");
-            e.printStackTrace();
+            LogTool.printException("读取配置文件时出错", true, e);
         }
         return reader;
     }
