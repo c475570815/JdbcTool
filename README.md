@@ -11,8 +11,7 @@
 - 支持主流关系型数据库数据库(默认mysql、Oracle、postgres,可根据自身需求添加jdbcConnection模板)
 - 动态加载数据池
 - 多数据源
-- 分页查询
-- 集成duird(若有需要可在项目中添加druid监控页面配置)
+- 集成duird
 
 #### 使用说明
 
