@@ -16,7 +16,7 @@ import org.springframework.lang.Nullable;
 public class LogTool {
 
     /**
-     * sql执行耗时
+     * sql执行耗时 输出
      *
      * @param start 执行前的时间毫秒数
      * @return void
@@ -48,7 +48,7 @@ public class LogTool {
     }
 
     /**
-     * sql 打印
+     * sql日志输出
      *
      * @param sql    执行sql
      * @param params 参数
@@ -86,6 +86,15 @@ public class LogTool {
         }
     }
 
+    /**
+     * 普通日志输出
+     *
+     * @param log
+     * @param params
+     * @return void
+     * @author CYH
+     * @date 2021/9/13 13:58
+     **/
     public static void printLog(String log, @Nullable Object... params) {
         try {
             if (ConfigCenter.isIsDebugger()) {
@@ -100,6 +109,17 @@ public class LogTool {
         }
     }
 
+    /**
+     * 异常日志输出
+     *
+     * @param logPre
+     * @param isPrintStackTrace
+     * @param e
+     * @param params
+     * @return void
+     * @author CYH
+     * @date 2021/9/13 13:58
+     **/
     public static void printException(String logPre, boolean isPrintStackTrace, Exception e, @Nullable Object... params) {
         logPre = String.format(logPre, params);
         System.out.println("--");
@@ -112,12 +132,23 @@ public class LogTool {
         }
     }
 
+    /**
+     * 异常日志输出
+     *
+     * @param logPre
+     * @param isPrintStackTrace
+     * @param e
+     * @param params
+     * @return void
+     * @author CYH
+     * @date 2021/9/13 13:58
+     **/
     public static void printException(JdbcDataBase db, String logPre, boolean isPrintStackTrace, Exception e, @Nullable Object... params) {
         logPre = String.format(logPre, params);
         DbInfo info = DataSourceFactory.getDbInfoByJdbcDataBase(db);
         System.out.println("--");
         System.out.println("--");
-        System.out.printf(logPre + ":%n" + "出错连接%s---用户名:%s%n", info.getConnectStr(),info.getLoginName());
+        System.out.printf(logPre + ":%n" + "出错连接%s---用户名:%s%n", info.getConnectStr(), info.getLoginName());
         System.out.println(e.getMessage());
         System.out.println("--");
         System.out.println("--");

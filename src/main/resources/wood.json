@@ -11,24 +11,6 @@
       "endParam": "*",
       "queryTimeOut": 1
     },
-    {
-      "sourceName": "yzt2000db",
-      "type": "postgres",
-      "ip": "*",
-      "port": 5432,
-      "loginName": "*",
-      "pwd": "*",
-      "endParam": "*"
-    },
-    {
-      "sourceName": "mainDb",
-      "type": "sqlserver",
-      "ip": "*",
-      "port": 1433,
-      "loginName": "*",
-      "pwd": "*",
-      "endParam": "database=*"
-    }
   ],
   "dataBaseTemplate": [
     {
