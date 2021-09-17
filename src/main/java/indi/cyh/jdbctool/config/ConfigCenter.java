@@ -34,18 +34,20 @@ public class ConfigCenter {
         try {
             //获取 系统变量configFileName  没有就使用默认的wood.json
             String configFileName = System.getProperty("configFile");
-            System.out.println("从JVM变量获取配置文件名:" + configFileName);
+            LogTool.printLog("从JVM变量获取配置文件名:%s", configFileName);
             if (StringTool.isEmpty(configFileName)) {
                 configFileName = System.getenv("JdbcToolConfigFile");
-                System.out.println("从环境变量获取配置文件名:" + configFileName);
+                LogTool.printLog("从环境变量获取配置文件名:%s", configFileName);
             }
             if (StringTool.isEmpty(configFileName)) {
                 configFileName = "wood.json";
-                System.out.println("使用默认配置文件名:" + configFileName);
+                LogTool.printLog("使用默认配置文件名:%s", configFileName);
             }
             ConfigReader reader = ConfigReader.read(configFileName);
             if (reader == null) {
-                throw new RuntimeException("config file read error......");
+                RuntimeException runtimeException = new RuntimeException("配置文件读取失败!");
+                LogTool.printException("配置文件读取失败!", true, runtimeException);
+                throw runtimeException;
             }
             //成功读取配置文件
             isDebugger = reader.isDebugger();

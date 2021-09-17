@@ -61,7 +61,7 @@ public class LogTool {
             //默认打开打印  当配置中设置了非调试模式则关闭打印
             if (ConfigCenter.isIsDebugger()) {
                 StringBuffer buffer = new StringBuffer();
-                buffer.append("\n##########################################JDBCTOOL##########################################\n");
+                buffer.append("\n##########################################JDBCTOOL-LOG##########################################\n");
                 buffer.append("conStr:" + jdbcUrl + "\n");
                 buffer.append("\n");
                 buffer.append("sql : " + sql + "\n");
@@ -78,7 +78,7 @@ public class LogTool {
                         buffer.append("\n");
                     }
                 }
-                buffer.append("\n##########################################JDBCTOOL##########################################\n");
+                buffer.append("\n##########################################JDBCTOOL-LOG##########################################\n");
                 System.out.println(buffer);
             }
         } catch (Exception e) {
@@ -102,11 +102,9 @@ public class LogTool {
 
     public static void printException(String logPre, boolean isPrintStackTrace, Exception e, @Nullable Object... params) {
         logPre = String.format(logPre, params);
-        System.out.println("--");
-        System.out.println("--");
+        System.out.println("##########################################JDBCTOOL-EXCEPTION-LOG##########################################");
         System.out.printf(logPre + ":%n" + "%s%n", e.getMessage());
-        System.out.println("--");
-        System.out.println("--");
+        System.out.println("##########################################JDBCTOOL-EXCEPTION-LOG##########################################");
         if (isPrintStackTrace) {
             e.printStackTrace();
         }
@@ -115,12 +113,10 @@ public class LogTool {
     public static void printException(JdbcDataBase db, String logPre, boolean isPrintStackTrace, Exception e, @Nullable Object... params) {
         logPre = String.format(logPre, params);
         DbInfo info = DataSourceFactory.getDbInfoByJdbcDataBase(db);
-        System.out.println("--");
-        System.out.println("--");
+        System.out.println("##########################################JDBCTOOL-EXCEPTION-LOG##########################################");
         System.out.printf(logPre + ":%n" + "出错连接%s---用户名:%s%n", info.getConnectStr(),info.getLoginName());
         System.out.println(e.getMessage());
-        System.out.println("--");
-        System.out.println("--");
+        System.out.println("##########################################JDBCTOOL-EXCEPTION-LOG##########################################");
         if (isPrintStackTrace) {
             e.printStackTrace();
         }
