@@ -1,5 +1,4 @@
 {
-  "isDebugger": true,
   "dataBaseConfig": [
     {
       "sourceName": "mainDb",
@@ -9,25 +8,7 @@
       "loginName": "*",
       "pwd": "*",
       "endParam": "*",
-      "queryTimeOut": 1
-    },
-    {
-      "sourceName": "yzt2000db",
-      "type": "postgres",
-      "ip": "*",
-      "port": 5432,
-      "loginName": "*",
-      "pwd": "*",
-      "endParam": "*"
-    },
-    {
-      "sourceName": "mainDb",
-      "type": "sqlserver",
-      "ip": "*",
-      "port": 1433,
-      "loginName": "*",
-      "pwd": "*",
-      "endParam": "database=*"
+      "queryTimeOut": 30
     }
   ],
   "dataBaseTemplate": [
@@ -60,5 +41,15 @@
     "initialSize": 2,
     "maxActive": 100,
     "keepAlive": true
+  },
+  "logConfig": {
+    "file": {
+      "enable": true,
+      "exceptionLogPath": "",
+      "toolLogPath": ""
+    },
+    "console": {
+      "enable": true
+    }
   }
 }

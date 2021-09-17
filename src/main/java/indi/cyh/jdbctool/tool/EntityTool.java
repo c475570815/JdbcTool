@@ -29,7 +29,7 @@ public class EntityTool {
         try {
             return type.getAnnotation(TableName.class).value();
         } catch (Exception e) {
-            LogTool.printException("获取实体类(%s)表名异常", true, e, type.toString());
+            LogTool.handleExceptionLog("获取实体类(%s)表名异常", true, e, type.toString());
             return "";
         }
     }
@@ -46,7 +46,7 @@ public class EntityTool {
         try {
             return type.getAnnotation(PrimaryKey.class).value();
         } catch (Exception e) {
-            LogTool.printException("获取实体类(%s)主键异常", true, e, type.toString());
+            LogTool.handleExceptionLog("获取实体类(%s)主键异常", true, e, type.toString());
             return "";
         }
     }
@@ -67,7 +67,7 @@ public class EntityTool {
                 list.add(field.getAnnotation(FieldColumn.class).value());
             }
         } catch (Exception e) {
-            LogTool.printException("获取实体类(%s)字段异常", true, e, type.toString());
+            LogTool.handleExceptionLog("获取实体类(%s)字段异常", true, e, type.toString());
         }
         return list;
     }
@@ -88,7 +88,7 @@ public class EntityTool {
                 map.put(field.getName(), field.getAnnotation(FieldColumn.class).value());
             }
         } catch (Exception e) {
-            LogTool.printException("获取实体类(%s)对应表字段异常", true, e, type.toString());
+            LogTool.handleExceptionLog("获取实体类(%s)对应表字段异常", true, e, type.toString());
         }
         return map;
     }
