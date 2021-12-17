@@ -64,7 +64,9 @@ public class EntityTool {
         try {
             Field[] fields = type.getDeclaredFields();
             for (Field field : fields) {
-                list.add(field.getAnnotation(FieldColumn.class).value());
+                if (field.getAnnotation(FieldColumn.class) != null && !StringTool.isEmpty(field.getAnnotation(FieldColumn.class).value())) {
+                    list.add(field.getAnnotation(FieldColumn.class).value());
+                }
             }
         } catch (Exception e) {
             LogTool.handleExceptionLog("获取实体类(%s)字段异常", true, e, type.toString());
@@ -85,7 +87,9 @@ public class EntityTool {
         try {
             Field[] fields = type.getDeclaredFields();
             for (Field field : fields) {
-                map.put(field.getName(), field.getAnnotation(FieldColumn.class).value());
+                if (field.getAnnotation(FieldColumn.class) != null && !StringTool.isEmpty(field.getAnnotation(FieldColumn.class).value())) {
+                    map.put(field.getName(), field.getAnnotation(FieldColumn.class).value());
+                }
             }
         } catch (Exception e) {
             LogTool.handleExceptionLog("获取实体类(%s)对应表字段异常", true, e, type.toString());

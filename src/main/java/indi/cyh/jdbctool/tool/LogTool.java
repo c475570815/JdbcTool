@@ -29,7 +29,6 @@ public class LogTool {
      */
     private static String EXCEPTION_LOG_SEPARATOR = "##########################################JDBCTOOL-EXCEPTION-LOG##########################################\n";
 
-
     private static SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
@@ -89,7 +88,6 @@ public class LogTool {
         }
     }
 
-
     /**
      * sql 打印
      *
@@ -124,8 +122,8 @@ public class LogTool {
     private String getSqlLog(String sql, String jdbcUrl, Object[] params) {
         StringBuilder buffer = new StringBuilder();
         buffer.append(LOG_SEPARATOR);
-        buffer.append("conStr:").append(jdbcUrl).append("\n");
         buffer.append(String.format("time:%s\n", timeFormat.format(new Date())));
+        buffer.append("conStr:").append(jdbcUrl).append("\n");
         buffer.append("\n");
         buffer.append("sql : ").append(sql).append("\n");
         if (params != null && params.length != 0) {
@@ -255,7 +253,7 @@ public class LogTool {
             DbInfo info = DataSourceFactory.getDbInfoByJdbcDataBase(db);
             log += EXCEPTION_LOG_SEPARATOR;
             log += String.format("time:%s\n", timeFormat.format(new Date()));
-            log += String.format("%s:%n出错连接%s---用户名:%s%n", logPre, info.getConnectStr(), info.getLoginName());
+            log += String.format("%s:%nconStr%s---用户名:%s%n", logPre, info.getConnectStr(), info.getLoginName());
             log += String.format("%s%n", e.getMessage());
             log += EXCEPTION_LOG_SEPARATOR;
             handleExceptionLogCommon(log, e, isPrintStackTrace, false);
