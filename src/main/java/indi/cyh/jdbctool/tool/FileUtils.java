@@ -1,9 +1,12 @@
 package indi.cyh.jdbctool.tool;
 
+import indi.cyh.jdbctool.config.ConfigCenter;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @Description TODO * @Author CYH * @Date 2021/9/17 16:24
@@ -15,7 +18,7 @@ public class FileUtils {
      * @return
      */
     public static String getConTextPath() {
-        String fileUrl = Thread.currentThread().getContextClassLoader().getResource("").getPath();
+        String fileUrl = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource(ConfigCenter.configFileName)).getPath();
         if ("usr".equals(fileUrl.substring(1, 4))) {
             //linux
             fileUrl = (fileUrl.substring(0, fileUrl.length() - 16));
@@ -23,6 +26,7 @@ public class FileUtils {
             //windows
             fileUrl = (fileUrl.substring(1, fileUrl.length() - 16));
         }
+        LogTool.handleLog("getConTextPath-end");
         return fileUrl;
     }
 

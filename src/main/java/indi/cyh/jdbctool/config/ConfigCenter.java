@@ -20,6 +20,11 @@ import java.util.*;
 public class ConfigCenter {
 
     /**
+     * 配置文件全名
+     */
+    public static String  configFileName;
+
+    /**
      * druid数据源模板
      */
     private static DruidDataSource defaultDataSource;
@@ -54,7 +59,7 @@ public class ConfigCenter {
     public static void loadConfig() {
         try {
             //获取 系统变量configFileName  没有就使用默认的wood.json
-            String configFileName = System.getProperty("configFile");
+            configFileName = System.getProperty("configFile");
             LogTool.handleLog("从JVM变量获取配置文件名:%s", configFileName);
             if (StringTool.isEmpty(configFileName)) {
                 configFileName = System.getenv("JdbcToolConfigFile");

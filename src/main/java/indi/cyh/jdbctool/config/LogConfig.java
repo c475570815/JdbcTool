@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import indi.cyh.jdbctool.modle.log.ConsoleLogConfig;
 import indi.cyh.jdbctool.modle.log.FileLogConfig;
 import indi.cyh.jdbctool.tool.FileUtils;
+import indi.cyh.jdbctool.tool.LogTool;
 
 /**
  * 日志配置中心
@@ -17,7 +18,7 @@ public class LogConfig {
     /**
      * 默认日志路径
      */
-    public static String DEFAULT_BASE_PATH = FileUtils.getConTextPath();//System.getProperty("user.dir");
+    public static String DEFAULT_BASE_PATH = FileUtils.getConTextPath();
 
 
     public static void setConfigs(JSONObject logConfig) {
@@ -26,7 +27,6 @@ public class LogConfig {
             JSONObject fileConfig = logConfig.getJSONObject("file");
             //控制台配置
             JSONObject consoleConfig = logConfig.getJSONObject("console");
-
             if (ConfigCenter.isJsonObjectNotNull(consoleConfig)) {
                 ConsoleLogConfig.setEnable(consoleConfig.getBoolean("enable"));
             }
