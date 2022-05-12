@@ -9,7 +9,7 @@
 #### 特性
 
 - 支持主流关系型数据库数据库(默认mysql、Oracle、postgres,可根据自身需求添加jdbcConnection模板)
-- 动态加载数据池
+- 动态加载数据库连接池
 - 多数据源
 - 集成duird
 
