@@ -11,7 +11,7 @@ import java.util.Map;
 
 
 /**
- * 类功能描述: 模板信息配置
+ * 类功能描述: jdbc模板信息配置
  *
  * @author mengcaiwen
  * @version 1.0

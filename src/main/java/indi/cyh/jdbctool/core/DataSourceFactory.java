@@ -132,13 +132,13 @@ public class DataSourceFactory {
         try {
             for (DbInfo info : listDbSource.keySet()) {
                 if (DbInfo.equals(info, entity)) {
-                    LogTool.printLog("获取到已有连接池:%s",info.getConnectStr());
-                    LogTool.printLog("目前连接池数量:%d",listDbSource.size());
+                    LogTool.handleLog("获取到已有连接池:%s",info.getConnectStr());
+                    LogTool.handleLog("目前连接池数量:%d",listDbSource.size());
                     db = listDbSource.get(info);
                 }
             }
         } catch (Exception e) {
-            LogTool.printException("获取已有连接池时异常", true, e);
+            LogTool.handleExceptionLog("获取已有连接池时异常", true, e);
         }
         if (db == null) {
             db = getNewJdbcDataBase(entity);
@@ -206,7 +206,7 @@ public class DataSourceFactory {
      * @date 2020/7/10 0010 15:49
      **/
     private static JdbcDataBase getNewJdbcDataBase(DbInfo dbInfo) {
-        LogTool.printLog("新增连接池-连接:%s",dbInfo.getConnectStr());
+        LogTool.handleLog("新增连接池-连接:%s",dbInfo.getConnectStr());
         DruidDataSource dataSource = ConfigCenter.getDefaultDataSource();
         dataSource.setDriverClassName(dbInfo.getDriverClassName());
         dataSource.setUrl(dbInfo.getConnectStr());
@@ -232,7 +232,7 @@ public class DataSourceFactory {
             dataSource.setQueryTimeout(dbInfo.getQueryTimeOut());
         }
         JdbcDataBase newDb = new JdbcDataBase(dataSource);
-        LogTool.printLog("目前连接池数量:%d",listDbSource.size());
+        LogTool.handleLog("目前连接池数量:%d",listDbSource.size());
         return newDb;
     }
 

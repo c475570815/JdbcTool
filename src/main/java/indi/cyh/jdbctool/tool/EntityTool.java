@@ -4,11 +4,12 @@ import indi.cyh.jdbctool.annotation.FieldColumn;
 import indi.cyh.jdbctool.annotation.PrimaryKey;
 import indi.cyh.jdbctool.annotation.TableName;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Clob;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.*;
 
 /**
  * 实体类处理工具
@@ -29,7 +30,7 @@ public class EntityTool {
         try {
             return type.getAnnotation(TableName.class).value();
         } catch (Exception e) {
-            LogTool.printException("获取实体类(%s)表名异常", true, e, type.toString());
+            LogTool.handleExceptionLog("获取实体类(%s)表名异常", true, e, type.toString());
             return "";
         }
     }
@@ -46,7 +47,7 @@ public class EntityTool {
         try {
             return type.getAnnotation(PrimaryKey.class).value();
         } catch (Exception e) {
-            LogTool.printException("获取实体类(%s)主键异常", true, e, type.toString());
+            LogTool.handleExceptionLog("获取实体类(%s)主键异常", true, e, type.toString());
             return "";
         }
     }
@@ -64,10 +65,12 @@ public class EntityTool {
         try {
             Field[] fields = type.getDeclaredFields();
             for (Field field : fields) {
-                list.add(field.getAnnotation(FieldColumn.class).value());
+                if (field.getAnnotation(FieldColumn.class) != null && !StringTool.isEmpty(field.getAnnotation(FieldColumn.class).value())) {
+                    list.add(field.getAnnotation(FieldColumn.class).value());
+                }
             }
         } catch (Exception e) {
-            LogTool.printException("获取实体类(%s)字段异常", true, e, type.toString());
+            LogTool.handleExceptionLog("获取实体类(%s)字段异常", true, e, type.toString());
         }
         return list;
     }
@@ -85,10 +88,12 @@ public class EntityTool {
         try {
             Field[] fields = type.getDeclaredFields();
             for (Field field : fields) {
-                map.put(field.getName(), field.getAnnotation(FieldColumn.class).value());
+                if (field.getAnnotation(FieldColumn.class) != null && !StringTool.isEmpty(field.getAnnotation(FieldColumn.class).value())) {
+                    map.put(field.getName(), field.getAnnotation(FieldColumn.class).value());
+                }
             }
         } catch (Exception e) {
-            LogTool.printException("获取实体类(%s)对应表字段异常", true, e, type.toString());
+            LogTool.handleExceptionLog("获取实体类(%s)对应表字段异常", true, e, type.toString());
         }
         return map;
     }
@@ -127,6 +132,7 @@ public class EntityTool {
             return fileToTable.get(p).equals(primaryField);
         }).findFirst().orElse(null);
     }
+
 
 
 }

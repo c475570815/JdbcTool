@@ -6,6 +6,7 @@ import org.postgresql.util.PGobject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
+import java.sql.Clob;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -157,7 +158,7 @@ public class DataConvertTool {
                     return convertToString(sourceTypeName, res);
             }
         } catch (Exception e) {
-            LogTool.printException("数值转换异常(%s---%s)", false, e,sourceTypeName,targetType);
+            LogTool.handleExceptionLog("数值转换异常(%s---%s)", false, e, sourceTypeName, targetType);
             return null;
         }
 
@@ -235,9 +236,16 @@ public class DataConvertTool {
                 return pgObjectToString(res);
             case "[B":
                 return byteToBase64(res);
+            case "javax.sql.rowset.serial.SerialClob":
+                try {
+                    return StringTool.clobToString((Clob) res);
+                } catch (Exception e) {
+                    return res.toString();
+                }
             default:
                 return res.toString();
         }
     }
+
 
 }
