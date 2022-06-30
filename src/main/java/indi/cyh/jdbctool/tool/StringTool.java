@@ -2,7 +2,15 @@ package indi.cyh.jdbctool.tool;
 
 
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.sql.Clob;
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -44,7 +52,61 @@ public class StringTool {
         return !isNotEmpty(strs);
     }
 
+    /**
+     * clob 转string
+     *
+     * @param clob
+     * @return
+     * @throws IOException
+     * @throws SQLException
+     */
+    public static String clobToString(Clob clob) throws IOException, SQLException {
+        if (clob == null || clob.length() <= 0) {
+            return "";
+        }
+        String reString = "";
+        Reader is = clob.getCharacterStream();
+        BufferedReader br = new BufferedReader(is);
+        String s = br.readLine();
+        StringBuilder sb = new StringBuilder();
+        while (s != null) {
+            sb.append(s);
+            s = br.readLine();
+        }
+        reString = sb.toString();
+        br.close();
+        is.close();
+        return reString;
+    }
 
+    /**
+     * 字符串转data
+     *
+     * @param str
+     * @return
+     */
+    public static Date stringToDate(String str) {
+        SimpleDateFormat sdf = null;
+        if (isEmpty(str)) {
+            return null;
+        }
+        if (str.length() == 21) {
+            sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SS");
+        } else if (str.length() == 19) {
+            sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        } else if (str.length() == 16) {
+            sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        } else {
+            sdf = new SimpleDateFormat("yyyy-MM-dd");
+        }
+        Date date = null;
+        try {
+            date = sdf.parse(str);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return date;
+    }
     /**
      * 判断字符串数据是否不为空
      *
@@ -64,39 +126,6 @@ public class StringTool {
         return flag;
     }
 
-    public static boolean isAnyBlank(CharSequence... css) {
-        if (css == null || css.length == 0) {
-            return true;
-        } else {
-            CharSequence[] arr$ = css;
-            int len$ = css.length;
-
-            for (int i$ = 0; i$ < len$; ++i$) {
-                CharSequence cs = arr$[i$];
-                if (cs == null) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-    }
-
-    /**
-     * @Author CYH
-     * @Description
-     * @Return
-     * @Exception
-     * @Date 2019/10/22 11:30
-     */
-    public static String getSqlValueStr(String[] arr) {
-        List<String> strArr = new ArrayList<>();
-        for (int i = 0; i < arr.length; i++) {
-            strArr.add("'" + arr[i] + "'");
-        }
-        return String.join( ",",strArr);
-    }
-
     /**
      * @Author CYH
      * @Description
@@ -108,20 +137,6 @@ public class StringTool {
         list = new ArrayList<>(list);
         for (int i = 0; i < list.size(); i++) {
             list.set(i, "'" + list.get(i) + "'");
-        }
-        return String.join( ",",list);
-    }
-    /**
-     * @Author CYH
-     * @Description
-     * @Return
-     * @Exception
-     * @Date 2019/10/22 11:30
-     */
-    public  static String getSqlColumnStr(List<String> list) {
-        list = new ArrayList<>(list);
-        for (int i = 0; i < list.size(); i++) {
-            list.set(i, "\"" + list.get(i) + "\"");
         }
         return String.join( ",",list);
     }

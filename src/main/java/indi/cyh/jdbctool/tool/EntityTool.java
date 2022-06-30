@@ -4,11 +4,12 @@ import indi.cyh.jdbctool.annotation.FieldColumn;
 import indi.cyh.jdbctool.annotation.PrimaryKey;
 import indi.cyh.jdbctool.annotation.TableName;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Clob;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.*;
 
 /**
  * 实体类处理工具
@@ -131,6 +132,7 @@ public class EntityTool {
             return fileToTable.get(p).equals(primaryField);
         }).findFirst().orElse(null);
     }
+
 
 
 }
