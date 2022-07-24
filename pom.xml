@@ -15,29 +15,19 @@
     </properties>
     <description>JdbcTool is a dbTool for java</description>
     <dependencies>
-
-        <!--spring-jdbc-->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jdbc</artifactId>
-            <version>5.3.1</version>
-        </dependency>
-
-
         <!--sqlserver driver-->
-        <dependency>
-            <groupId>com.microsoft.sqlserver</groupId>
-            <artifactId>sqljdbc4</artifactId>
-            <version>4.2</version>
-            <scope>provided</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.microsoft.sqlserver</groupId>-->
+<!--            <artifactId>sqljdbc4</artifactId>-->
+<!--            <version>4.2</version>-->
+<!--            <scope>provided</scope>-->
+<!--        </dependency>-->
 
         <!-- mysql driver -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.19</version>
-
         </dependency>
 
 
@@ -63,7 +53,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
-            <version>1.2.4</version>
+            <version>1.2.11</version>
         </dependency>
 
         <!--json解析-->

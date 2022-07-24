@@ -1,26 +1,18 @@
 package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.sun.istack.internal.Nullable;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
 import indi.cyh.jdbctool.tool.LogTool;
 import indi.cyh.jdbctool.tool.StringTool;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.lang.Nullable;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
-import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @ClassName JdbcDateBase
@@ -31,61 +23,10 @@ import java.util.regex.Pattern;
 public class JdbcDataBase {
 
 
-    //sql 匹配相应参数
-    private static final Pattern selectPattern;
-    private static final Pattern fromPattern;
-    private static final Pattern PATTERN_BRACKET;
-    private static final Pattern PATTERN_SELECT;
-    private static final Pattern PATTERN_DISTINCT;
-    private static final Pattern rxOrderBy;
-
-    ////事务相关
-    private static final TransactionDefinition definition;
-    private final DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
-    private final LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
-
-    static {
-        //sql 匹配相应参数 赋值
-        selectPattern = Pattern.compile("\\s*(SELECT|EXECUTE|CALL)\\s", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        fromPattern = Pattern.compile("\\s*FROM\\s", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        PATTERN_BRACKET = Pattern.compile("(\\(|\\)|[^\\(\\)]*)");
-        PATTERN_SELECT = Pattern.compile("select([\\W\\w]*)from", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        PATTERN_DISTINCT = Pattern.compile("\\A\\s+DISTINCT\\s", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        rxOrderBy = Pattern.compile("\\bORDER\\s+BY\\s+([\\W\\w]*)(ASC|DESC)+", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        //事务参数赋默认值
-        definition = new TransactionDefinition() {
-            @Override
-            public int getPropagationBehavior() {
-                return TransactionDefinition.PROPAGATION_REQUIRED;
-            }
-
-            @Override
-            public int getIsolationLevel() {
-                return TransactionDefinition.ISOLATION_DEFAULT;
-            }
-
-            @Override
-            public int getTimeout() {
-                return TIMEOUT_DEFAULT;
-            }
-
-            @Override
-            public boolean isReadOnly() {
-                return false;
-            }
-
-            @Override
-            public String getName() {
-                return "JDBC-TOOL";
-            }
-        };
-
-    }
-
     /**
-     * 当前对象使用的数据池
+     * jdbc处理工具
      */
-    DruidDataSource dataSource;
+    JdbcHandler handler;
 
     /**
      * 从配置文件中获取是否为调试模式
@@ -103,9 +44,9 @@ public class JdbcDataBase {
 
     @Override
     public int hashCode() {
-        String conn = dataSource.getUrl();
-        String loginName = dataSource.getUsername();
-        String pwd = dataSource.getPassword();
+        String conn = handler.getDataSource().getUrl();
+        String loginName = handler.getDataSource().getUsername();
+        String pwd = handler.getDataSource().getPassword();
         return 17 * conn.hashCode() * loginName.hashCode() * pwd.hashCode();
     }
 
@@ -119,26 +60,50 @@ public class JdbcDataBase {
         if (this == db) {
             return true;
         }
-        return db.dataSource.getUrl().equals(this.dataSource.getUrl());
+        return db.handler.getDataSource().getUrl().equals(this.handler.getDataSource().getUrl());
     }
 
     public JdbcDataBase(DruidDataSource dataSource) {
-        this.dataSource = dataSource;
-        transactionManager.setDataSource(dataSource);
+        this.handler = new JdbcHandler(dataSource);
     }
 
+
     /**
-     * 根据当前对象数据源 生成 JdbcTemplate
+     * 查询listmap时 转换一些特殊类型为String
      *
-     * @return org.springframework.jdbc.core.JdbcTemplate
+     * @param pageData
+     * @return java.lang.Object
      * @author cyh
-     * 2020/5/28 21:59
+     * 2020/5/28 22:15
      **/
-    public JdbcTemplate getJdbcTemplate() {
-        JdbcTemplate template = new JdbcTemplate();
-        setQueryTimeOut(template);
-        template.setDataSource(this.dataSource);
-        return template;
+    private Object resultConvert(List<Map<String, Object>> pageData) {
+        HashMap<String, ConvertType> convertMap = new HashMap<>();
+        List<String> hasCheckColumnList = new ArrayList<>();
+        for (Map<String, Object> row : pageData) {
+            DataConvertTool.getConvertColumn(pageData.get(0), hasCheckColumnList, convertMap);
+            if (convertMap.keySet().size() > 0) {
+                for (String columnKey : convertMap.keySet()) {
+                    Object columnData = row.get(columnKey);
+                    if (columnData != null) {
+                        switch (convertMap.get(columnKey)) {
+                            case BYTE_TO_BASE64:
+                                row.put(columnKey, DataConvertTool.byteToBase64(columnData));
+                                break;
+                            case TIMESTAMP_TO_STRING:
+                                row.put(columnKey, DataConvertTool.timestampToString(columnData));
+                                break;
+                            case PGOBJECT_TO_STRING:
+                                row.put(columnKey, DataConvertTool.pgObjectToString(columnData));
+                            default:
+                                break;
+                        }
+                    } else {
+                        row.put(columnKey, "");
+                    }
+                }
+            }
+        }
+        return pageData;
     }
 
     /**
@@ -152,14 +117,11 @@ public class JdbcDataBase {
      * @date 2020/5/29 0029 16:44
      **/
     public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        JdbcTemplate template = getJdbcTemplate();
         T t = null;
         try {
-            t = template.queryForObject(sql, requiredType, params);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
+            t = handler.querySingleTypeResult(sql, requiredType, params);
         } catch (Exception e) {
             LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
         }
@@ -177,9 +139,16 @@ public class JdbcDataBase {
      * @date 2020/7/10 0010 17:05
      **/
     public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        List<T> t = getJdbcTemplate().query(sql, params, (resultSet, i) -> (T) resultSet.getObject(1));
+        List<T> t = null;
+        try {
+            t = handler.queryListSingleType(sql, requiredType, params);
+        } catch (SQLException e) {
+            LogTool.handleExceptionLogByDbInfo(this, "查询异常", true, e);
+            return new ArrayList<>();
+        }
+        //getJdbcTemplate().query(sql, params, (resultSet, i) -> (T) resultSet.getObject(1));
         log.handleTimeLost(start);
         return t;
     }
@@ -195,14 +164,11 @@ public class JdbcDataBase {
      * 2020/4/11 15:41
      **/
     public <T> T queryOneRow(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        JdbcTemplate template = getJdbcTemplate();
         T t = null;
         try {
-            t = template.queryForObject(sql, new JdbcRowMapper<>(requiredType), params);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
+            t = handler.queryObject(sql, requiredType, params);
         } catch (Exception e) {
             LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
         }
@@ -221,14 +187,12 @@ public class JdbcDataBase {
      * 2020/5/28 22:12
      **/
     public <T> List<T> queryList(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        JdbcTemplate template = getJdbcTemplate();
+
         List<T> t = new ArrayList<>();
         try {
-            t = template.query(sql, new JdbcRowMapper<>(requiredType), params);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
+            t = handler.queryObjectList(sql, requiredType, params);
         } catch (Exception e) {
             LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
         }
@@ -246,14 +210,11 @@ public class JdbcDataBase {
      * 2020/5/28 22:12
      **/
     public Map<String, Object> queryForMap(String sql, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        JdbcTemplate template = getJdbcTemplate();
         Map<String, Object> map = null;
         try {
-            map = template.queryForMap(sql, params);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
+            map = handler.queryMap(sql, params);
         } catch (Exception e) {
             LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
         }
@@ -270,14 +231,12 @@ public class JdbcDataBase {
      * 2020/4/11 18:11
      **/
     public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        JdbcTemplate template = getJdbcTemplate();
+
         List<Map<String, Object>> list = new ArrayList<>();
         try {
-            list = template.queryForList(sql, params);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
+            list = handler.queryListMap(sql, params);
         } catch (Exception e) {
             LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
         }
@@ -319,13 +278,13 @@ public class JdbcDataBase {
      **/
     private PageQueryInfo getPageQueryInfo(Integer page, Integer rows, String sql) throws Exception {
         long skip = (page - 1) * rows;
-        Matcher matcherSelect = PATTERN_SELECT.matcher(sql);
+        Matcher matcherSelect = SqlRegular.PATTERN_SELECT.matcher(sql);
         if (!matcherSelect.find()) {
             throw new Exception("build paging querySql error:canot find select from");
         } else {
             String sqlSelectCols = matcherSelect.group(1);
             String countSql = String.format("select COUNT(1) from (%s) pageTable", sql);
-            Matcher matcherDistinct = PATTERN_DISTINCT.matcher(sqlSelectCols);
+            Matcher matcherDistinct = SqlRegular.PATTERN_DISTINCT.matcher(sqlSelectCols);
             int lastOrderIndex = sql.toLowerCase().lastIndexOf("order");
             String sqlOrderBy = null;
             if (lastOrderIndex > -1) {
@@ -349,43 +308,6 @@ public class JdbcDataBase {
         }
     }
 
-    /**
-     * 查询listmap时 转换一些特殊类型为String
-     *
-     * @param pageData
-     * @return java.lang.Object
-     * @author cyh
-     * 2020/5/28 22:15
-     **/
-    private Object resultConvert(List<Map<String, Object>> pageData) {
-        HashMap<String, ConvertType> convertMap = new HashMap<>();
-        List<String> hasCheckColumnList = new ArrayList<>();
-        for (Map<String, Object> row : pageData) {
-            DataConvertTool.getConvertColumn(pageData.get(0), hasCheckColumnList, convertMap);
-            if (convertMap.keySet().size() > 0) {
-                for (String columnKey : convertMap.keySet()) {
-                    Object columnData = row.get(columnKey);
-                    if (columnData != null) {
-                        switch (convertMap.get(columnKey)) {
-                            case BYTE_TO_BASE64:
-                                row.put(columnKey, DataConvertTool.byteToBase64(columnData));
-                                break;
-                            case TIMESTAMP_TO_STRING:
-                                row.put(columnKey, DataConvertTool.timestampToString(columnData));
-                                break;
-                            case PGOBJECT_TO_STRING:
-                                row.put(columnKey, DataConvertTool.pgObjectToString(columnData));
-                            default:
-                                break;
-                        }
-                    } else {
-                        row.put(columnKey, "");
-                    }
-                }
-            }
-        }
-        return pageData;
-    }
 
     /**
      * 用于执行 DML 语句(INSERT、UPDATE、DELETE)
@@ -397,9 +319,8 @@ public class JdbcDataBase {
      * 2020/4/11 18:05
      **/
     public int executeDMLSql(String sql, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
-        JdbcTemplate template = getJdbcTemplate();
-        return template.update(sql, params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        return handler.update(sql, params);
     }
 
     /**
@@ -410,11 +331,11 @@ public class JdbcDataBase {
      * @author CYH
      * @date 2020/5/29 0029 15:44
      **/
-    public <T> Object insert(Class<T> requiredType, T t, boolean returnIntPrimary) throws NoSuchFieldException, IllegalAccessException {
+    public <T> Object insert(Class<T> requiredType, T t, boolean returnIntPrimary) throws NoSuchFieldException, IllegalAccessException, SQLException {
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         //语句拼接
         StringBuilder insertSqlBuilder = new StringBuilder("INSERT INTO ");
-        insertSqlBuilder.append(EntityTool.getTabelName(requiredType));
+        insertSqlBuilder.append(EntityTool.getTableName(requiredType));
         insertSqlBuilder.append("(");
         List<String> columnNameList = new ArrayList<>();
         List<String> placeholderList = new ArrayList<>();
@@ -438,19 +359,7 @@ public class JdbcDataBase {
         String sql = insertSqlBuilder.toString();
         Object[] params = valueList.toArray();
         if (returnIntPrimary) {
-            //返回主键预处理
-            JdbcTemplate template = getJdbcTemplate();
-            KeyHolder keyHolder = new GeneratedKeyHolder();
-            template.update(conn -> {
-                // 预处理 注意参数 PreparedStatement.RETURN_GENERATED_KEYS
-                PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
-                for (int i = 0; i < params.length; i++) {
-                    ps.setObject((i + 1), params[i]);
-                }
-                return ps;
-            }, keyHolder);
-            log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
-            return Objects.requireNonNull(keyHolder.getKey()).intValue();
+            return handler.updateReturnIntPrimary(sql, params);
         } else {
             executeDMLSql(sql, params);
             return null;
@@ -468,7 +377,7 @@ public class JdbcDataBase {
      **/
     public <T> void delectbyId(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "DELETE FROM " + tableName + "  where  " +
                 primaryField + "=?";
         executeDMLSql(sql, id);
@@ -489,7 +398,7 @@ public class JdbcDataBase {
             isList.add(id.toString());
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "DELETE FROM " + tableName + "  where  " +
                 primaryField + " in (" + StringTool.getSqlValueStr(isList) + ")";
         executeDMLSql(sql);
@@ -506,7 +415,7 @@ public class JdbcDataBase {
      **/
     public <T> T findRowById(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "select * FROM " + tableName + "  where  " +
                 primaryField + "=?";
         return queryOneRow(sql, requiredType, id);
@@ -527,7 +436,7 @@ public class JdbcDataBase {
             isList.add(id.toString());
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "select * FROM " + tableName + "  where  " +
                 primaryField + " in  (" + StringTool.getSqlValueStr(isList) + ")";
         return queryList(sql, requiredType);
@@ -544,7 +453,7 @@ public class JdbcDataBase {
      **/
     public <T> void updateById(Class<T> requiredType, T entity) throws NoSuchFieldException, IllegalAccessException {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         Object primaryFieldValue = null;
         List<Object> valueList = new ArrayList<>();
@@ -570,69 +479,69 @@ public class JdbcDataBase {
         executeDMLSql(sql, params);
     }
 
-    /**
-     * 开启一个事务
-     *
-     * @param
-     * @return java.lang.String  返回事务id
-     * @author cyh
-     * 2020/7/4 9:41
-     **/
-    public String beginTransaction() throws Exception {
-        try {
-            TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
-            String transactionId = UUID.randomUUID().toString();
-            transcationMap.put(transactionId, transactionStatus);
-            LogTool.handleLog("开启事务:%s", transactionId);
-            return transactionId;
-        } catch (Exception e) {
-            throw new Exception("事务开启异常:" + e.getMessage());
-        }
-    }
-
-    /**
-     * 提交一个事务
-     *
-     * @param transactionId 事务id
-     * @return void
-     * @author cyh
-     * 2020/7/4 9:42
-     **/
-    public void commitTransaction(String transactionId) {
-        if (transcationMap.containsKey(transactionId)) {
-            try {
-                transactionManager.commit(transcationMap.get(transactionId));
-                transcationMap.remove(transactionId);
-                LogTool.handleLog("事务已提交:%s", transactionId);
-            } catch (Exception e) {
-                LogTool.handleExceptionLog("事务提交异常%s", true, e, transactionId);
-            }
-        } else {
-            System.out.println("事务提交异常--错误的transactionId:" + transactionId);
-        }
-
-    }
-
-    /**
-     * 回滚一个事务
-     *
-     * @param transactionId 事务id
-     * @return void
-     * @author cyh
-     * 2020/7/4 9:42
-     **/
-    public void rollbackTransaction(String transactionId) {
-        if (transcationMap.containsKey(transactionId)) {
-            try {
-                transactionManager.rollback(transcationMap.get(transactionId));
-                transcationMap.remove(transactionId);
-            } catch (Exception e) {
-                LogTool.handleExceptionLog("事务回归异常%s", true, e, transactionId);
-            }
-        } else {
-            System.out.println("事务回归异常--错误的transactionId:" + transactionId);
-        }
-    }
+//    /**
+//     * 开启一个事务
+//     *
+//     * @param
+//     * @return java.lang.String  返回事务id
+//     * @author cyh
+//     * 2020/7/4 9:41
+//     **/
+//    public String beginTransaction() throws Exception {
+//        try {
+//            TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
+//            String transactionId = UUID.randomUUID().toString();
+//            transcationMap.put(transactionId, transactionStatus);
+//            LogTool.handleLog("开启事务:%s", transactionId);
+//            return transactionId;
+//        } catch (Exception e) {
+//            throw new Exception("事务开启异常:" + e.getMessage());
+//        }
+//    }
+//
+//    /**
+//     * 提交一个事务
+//     *
+//     * @param transactionId 事务id
+//     * @return void
+//     * @author cyh
+//     * 2020/7/4 9:42
+//     **/
+//    public void commitTransaction(String transactionId) {
+//        if (transcationMap.containsKey(transactionId)) {
+//            try {
+//                transactionManager.commit(transcationMap.get(transactionId));
+//                transcationMap.remove(transactionId);
+//                LogTool.handleLog("事务已提交:%s", transactionId);
+//            } catch (Exception e) {
+//                LogTool.handleExceptionLog("事务提交异常%s", true, e, transactionId);
+//            }
+//        } else {
+//            System.out.println("事务提交异常--错误的transactionId:" + transactionId);
+//        }
+//
+//    }
+//
+//    /**
+//     * 回滚一个事务
+//     *
+//     * @param transactionId 事务id
+//     * @return void
+//     * @author cyh
+//     * 2020/7/4 9:42
+//     **/
+//    public void rollbackTransaction(String transactionId) {
+//        if (transcationMap.containsKey(transactionId)) {
+//            try {
+//                transactionManager.rollback(transcationMap.get(transactionId));
+//                transcationMap.remove(transactionId);
+//            } catch (Exception e) {
+//                LogTool.handleExceptionLog("事务回归异常%s", true, e, transactionId);
+//            }
+//        } else {
+//            System.out.println("事务回归异常--错误的transactionId:" + transactionId);
+//        }
+//    }
 
     /**
      * 用于执行DDL  sql
@@ -643,9 +552,12 @@ public class JdbcDataBase {
      * @date 2020/5/15 0015 16:34
      **/
     public void executeDDLSql(String sql) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl());
-        JdbcTemplate template = getJdbcTemplate();
-        template.execute(sql);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl());
+        try {
+            handler.getStatement().execute(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -657,21 +569,6 @@ public class JdbcDataBase {
      * 2020/12/9 22:41
      **/
     public DataSource getDataSource() {
-        return this.dataSource;
-    }
-
-    /**
-     * 查询 当前对象对应的db信息 配置查询超时时间
-     *
-     * @param template
-     * @return void
-     * @author CYH
-     * @date 2021/9/9 16:22
-     **/
-    private void setQueryTimeOut(JdbcTemplate template) {
-        DbInfo info = DataSourceFactory.getDbInfoByJdbcDataBase(this);
-        if (info.getQueryTimeOut() != -1) {
-            template.setQueryTimeout(info.getQueryTimeOut());
-        }
+        return this.handler.getDataSource();
     }
 }

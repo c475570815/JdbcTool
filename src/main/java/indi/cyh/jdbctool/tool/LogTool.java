@@ -1,11 +1,11 @@
 package indi.cyh.jdbctool.tool;
 
+import com.sun.istack.internal.Nullable;
 import indi.cyh.jdbctool.core.DataSourceFactory;
 import indi.cyh.jdbctool.core.JdbcDataBase;
 import indi.cyh.jdbctool.modle.DbInfo;
 import indi.cyh.jdbctool.modle.log.ConsoleLogConfig;
 import indi.cyh.jdbctool.modle.log.FileLogConfig;
-import org.springframework.lang.Nullable;
 
 import java.io.File;
 import java.text.SimpleDateFormat;

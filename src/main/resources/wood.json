@@ -3,12 +3,12 @@
   "dataBaseConfig": [
     {
       "sourceName": "mainDb",
-      "type": "oracle",
-      "ip": "*",
+      "type": "mysql",
+      "ip": "127.0.0.1",
       "port": 1521,
-      "loginName": "*",
-      "pwd": "*",
-      "endParam": "*",
+      "loginName": "root",
+      "pwd": "1",
+      "endParam": "?serverTimezone=GMT",
       "queryTimeOut": 1
     },
   ],
