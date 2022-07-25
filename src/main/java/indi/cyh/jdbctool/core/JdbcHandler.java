@@ -21,14 +21,22 @@ public class JdbcHandler {
      */
     private DruidDataSource dataSource;
 
+    private DruidPooledConnection sharedConnection;
+
     public JdbcHandler(DruidDataSource dataSource) {
         this.dataSource = dataSource;
     }
 
 
+    private boolean IsTransaction = false;
+
+
     public DruidPooledConnection getConnecting() {
         try {
-            return this.dataSource.getConnection();
+            if (this.sharedConnection == null || this.sharedConnection.isClosed()) {
+                this.sharedConnection = this.dataSource.getConnection();
+            }
+            return this.sharedConnection;
         } catch (Exception e) {
             LogTool.handleLog("从连接池获取数据库连接异常:%s", e.getMessage());
             e.printStackTrace();
@@ -67,8 +75,11 @@ public class JdbcHandler {
         try {
             return preparedStatement.executeQuery();
         } catch (SQLException e) {
-            LogTool.handleLog("sql预处理异常:%s", e.getMessage());
+            LogTool.handleExceptionLog("sql预处理异常", true, e);
             throw new RuntimeException(e);
+        } finally {
+            closePreparedStatement(preparedStatement);
+            closeConnection();
         }
     }
 
@@ -85,8 +96,37 @@ public class JdbcHandler {
             }
             return preparedStatement;
         } catch (SQLException e) {
-            LogTool.handleLog("sql预处理异常:%s", e.getMessage());
+            LogTool.handleExceptionLog("sql预处理异常", true, e);
             throw new RuntimeException(e);
+        }
+    }
+
+    private void closePreparedStatement(PreparedStatement preparedStatement) {
+        try {
+            preparedStatement.close();
+        } catch (SQLException e) {
+            LogTool.handleExceptionLog("关闭预处理对象异常", true, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void closeResultSet(ResultSet rs) {
+        try {
+            rs.close();
+        } catch (SQLException e) {
+            LogTool.handleExceptionLog("ResultSet关闭异常", false, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void closeConnection() {
+        try {
+            if (!this.IsTransaction && this.sharedConnection != null && !this.sharedConnection.isClosed()) {
+                this.sharedConnection.close();
+            }
+        } catch (SQLException e) {
+            LogTool.handleLog(("关闭数据库连接异常!" + e.getMessage() + ((DruidDataSource) this.dataSource).getUrl()));
+            throw new RuntimeException("close connection error", e);
         }
     }
 
@@ -115,131 +155,247 @@ public class JdbcHandler {
     }
 
 
-    public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) throws InstantiationException, IllegalAccessException, SQLException, IOException, NoSuchFieldException {
-        ResultSet rs = this.queryResultSet(sql, params);
-        if (resultSetIsEmpty(rs)) {
-            return null;
+    public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
+        ResultSet rs = null;
+        rs = this.queryResultSet(sql, params);
+        try {
+            if (resultSetIsEmpty(rs)) {
+                return null;
+            }
+            rs.next();
+            return (T) DataConvertTool.convertObject(requiredType, rs.getObject(0));
+        } catch (SQLException e) {
+            LogTool.handleExceptionLog("查询异常", false, e);
+            throw new RuntimeException(e);
+        } finally {
+            closeResultSet(rs);
+            closeConnection();
         }
-        rs.next();
-        return (T) DataConvertTool.convertObject(requiredType, rs.getObject(0));
-
     }
 
-    public <T> List<T> queryListSingleType(String sql, Class<T> requiredType, @Nullable Object... params) throws SQLException {
+
+    public <T> List<T> queryListSingleType(String sql, Class<T> requiredType, @Nullable Object... params) {
         ResultSet rs = this.queryResultSet(sql, params);
-        if (resultSetIsEmpty(rs)) {
-            return new ArrayList<>();
+        try {
+            if (resultSetIsEmpty(rs)) {
+                return new ArrayList<>();
+            }
+            List<T> res = new ArrayList<>();
+            while (rs.next()) {
+                res.add((T) DataConvertTool.convertObject(requiredType, rs.getObject(0)));
+            }
+            return res;
+        } catch (SQLException e) {
+            LogTool.handleExceptionLog("查询异常", false, e);
+            throw new RuntimeException(e);
+        } finally {
+            closeResultSet(rs);
+            closeConnection();
         }
-        List<T> res = new ArrayList<>();
-        while (rs.next()) {
-            res.add((T) DataConvertTool.convertObject(requiredType, rs.getObject(0)));
-        }
-        return res;
     }
 
-    public <T> T queryObject(String sql, Class<T> requiredType, @Nullable Object... params) throws InstantiationException, IllegalAccessException, SQLException, IOException, NoSuchFieldException {
+    public <T> T queryObject(String sql, Class<T> requiredType, @Nullable Object... params) {
         ResultSet rs = this.queryResultSet(sql, params);
-        if (resultSetIsEmpty(rs)) {
-            return null;
-        }
-        Map<String, String> filedColumMap = EntityTool.getEntityFieldColumnMap(requiredType);
-        List<String> columList = new ArrayList<>(filedColumMap.values());
-        List<String> filedList = new ArrayList<>(filedColumMap.keySet());
-        T row = requiredType.newInstance();
-        rs.next();
-        for (int i = 0; i < columList.size(); i++) {
-            String columName = columList.get(i);
-            String filedName = filedList.get(i);
-            EntityTool.setColumValue(row, filedName, rs.getObject(columName));
-        }
-        return row;
-    }
-
-    public <T> List<T> queryObjectList(String sql, Class<T> requiredType, @Nullable Object... params) throws InstantiationException, IllegalAccessException, SQLException, IOException, NoSuchFieldException {
-        ResultSet rs = this.queryResultSet(sql, params);
-        if (resultSetIsEmpty(rs)) {
-            return null;
-        }
-        Map<String, String> filedColumMap = EntityTool.getEntityFieldColumnMap(requiredType);
-        List<String> columList = new ArrayList<>(filedColumMap.values());
-        List<String> filedList = new ArrayList<>(filedColumMap.keySet());
-        List<T> res = new ArrayList<>();
-        while (rs.next()) {
+        try {
+            if (resultSetIsEmpty(rs)) {
+                return null;
+            }
+            Map<String, String> filedColumMap = EntityTool.getEntityFieldColumnMap(requiredType);
+            List<String> columList = new ArrayList<>(filedColumMap.values());
+            List<String> filedList = new ArrayList<>(filedColumMap.keySet());
             T row = requiredType.newInstance();
+            rs.next();
             for (int i = 0; i < columList.size(); i++) {
                 String columName = columList.get(i);
                 String filedName = filedList.get(i);
                 EntityTool.setColumValue(row, filedName, rs.getObject(columName));
             }
-            res.add(row);
+            return row;
+        } catch (Exception e) {
+            LogTool.handleExceptionLog("查询异常", false, e);
+            throw new RuntimeException(e);
+        } finally {
+            closeResultSet(rs);
+            closeConnection();
         }
-        return res;
     }
 
 
-    public Map<String, Object> queryMap(String sql, @Nullable Object... params) throws SQLException {
+    public <T> List<T> queryObjectList(String sql, Class<T> requiredType, @Nullable Object... params) {
         ResultSet rs = this.queryResultSet(sql, params);
-        if (resultSetIsEmpty(rs)) {
-            return null;
+        try {
+            if (resultSetIsEmpty(rs)) {
+                return null;
+            }
+            Map<String, String> filedColumMap = EntityTool.getEntityFieldColumnMap(requiredType);
+            List<String> columList = new ArrayList<>(filedColumMap.values());
+            List<String> filedList = new ArrayList<>(filedColumMap.keySet());
+            List<T> res = new ArrayList<>();
+            while (rs.next()) {
+                T row = requiredType.newInstance();
+                for (int i = 0; i < columList.size(); i++) {
+                    String columName = columList.get(i);
+                    String filedName = filedList.get(i);
+                    EntityTool.setColumValue(row, filedName, rs.getObject(columName));
+                }
+                res.add(row);
+            }
+            return res;
+        } catch (Exception e) {
+            LogTool.handleExceptionLog("查询异常", false, e);
+            throw new RuntimeException(e);
+        } finally {
+            closeResultSet(rs);
+            closeConnection();
         }
-        return rowToMap(rs);
     }
 
-    public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) throws SQLException {
+
+    public Map<String, Object> queryMap(String sql, @Nullable Object... params) {
         ResultSet rs = this.queryResultSet(sql, params);
-        if (resultSetIsEmpty(rs)) {
-            return null;
+        try {
+            if (resultSetIsEmpty(rs)) {
+                return null;
+            }
+            return rowToMap(rs);
+        } catch (Exception e) {
+            LogTool.handleExceptionLog("查询异常", false, e);
+            throw new RuntimeException(e);
+        } finally {
+            closeResultSet(rs);
+            closeConnection();
         }
-        List<Map<String, Object>> res = new ArrayList<>();
-        while (rs.next()) {
-            res.add(rowToMap(rs));
+    }
+
+    public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
+        ResultSet rs = this.queryResultSet(sql, params);
+        try {
+            if (resultSetIsEmpty(rs)) {
+                return null;
+            }
+            List<Map<String, Object>> res = new ArrayList<>();
+            while (rs.next()) {
+                res.add(rowToMap(rs));
+            }
+            return res;
+        } catch (Exception e) {
+            LogTool.handleExceptionLog("查询异常", false, e);
+            throw new RuntimeException(e);
+        } finally {
+            closeResultSet(rs);
+            closeConnection();
         }
-        return res;
     }
 
 
-    public JSONObject queryJsonObject(String sql, @Nullable Object... params) throws SQLException {
+    public JSONObject queryJsonObject(String sql, @Nullable Object... params) {
         ResultSet rs = this.queryResultSet(sql, params);
-        if (resultSetIsEmpty(rs)) {
-            return null;
+        try {
+            if (resultSetIsEmpty(rs)) {
+                return null;
+            }
+            return rowToJsonObject(rs);
+        } catch (Exception e) {
+            LogTool.handleExceptionLog("查询异常", false, e);
+            throw new RuntimeException(e);
+        } finally {
+            closeResultSet(rs);
+            closeConnection();
         }
-        return rowToJsonObject(rs);
     }
 
-    public JSONArray queryJsonArray(String sql, @Nullable Object... params) throws SQLException {
+    public JSONArray queryJsonArray(String sql, @Nullable Object... params) {
         ResultSet rs = this.queryResultSet(sql, params);
-        if (resultSetIsEmpty(rs)) {
-            return null;
+        try {
+            if (resultSetIsEmpty(rs)) {
+                return null;
+            }
+            JSONArray res = new JSONArray();
+            while (rs.next()) {
+                res.add(rowToJsonObject(rs));
+            }
+            return res;
+        } catch (Exception e) {
+            LogTool.handleExceptionLog("查询异常", false, e);
+            throw new RuntimeException(e);
+        } finally {
+            closeResultSet(rs);
+            closeConnection();
         }
-        JSONArray res = new JSONArray();
-        while (rs.next()) {
-            res.add(rowToJsonObject(rs));
-        }
-        return res;
     }
 
 
     public int update(String sql, @Nullable Object... params) {
+        PreparedStatement preparedStatement = setSqlParam(sql, null, params);
         try {
-            PreparedStatement preparedStatement = setSqlParam(sql, null, params);
             return preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            LogTool.handleLog("更新语句执行异常:%s", e.getMessage());
+            LogTool.handleExceptionLog("更新语句执行异常", false, e);
             throw new RuntimeException(e);
+        } finally {
+            closePreparedStatement(preparedStatement);
+            closeConnection();
         }
     }
 
-    public Object updateReturnIntPrimary(String sql, Object[] params) throws SQLException {
+    public Object updateReturnIntPrimary(String sql, Object[] params) {
         //返回主键预处理
         PreparedStatement preparedStatement = setSqlParam(sql, PreparedStatement.RETURN_GENERATED_KEYS, params);
-        preparedStatement.executeUpdate();
-        ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-        if (generatedKeys.next()) {
-            return generatedKeys.getLong(1);
+        try {
+            preparedStatement.executeUpdate();
+            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                return generatedKeys.getLong(1);
+            }
+            LogTool.handleLog("获取主键失败");
+            return "";
+        } catch (SQLException e) {
+            LogTool.handleExceptionLog("更新语句执行异常", false, e);
+            throw new RuntimeException(e);
+        } finally {
+            closePreparedStatement(preparedStatement);
+            closeConnection();
         }
-        LogTool.handleLog("获取主键失败");
-        return "";
     }
+
+    public void beginTransaction() {
+        try {
+            this.IsTransaction = true;
+            this.getConnecting();
+            this.sharedConnection.setAutoCommit(false);
+        } catch (SQLException var2) {
+            LogTool.handleLog("启动事务异常!" + var2.getMessage());
+        }
+    }
+
+    public void commitTransaction() {
+        try {
+            if (this.sharedConnection != null) {
+                this.sharedConnection.commit();
+                this.sharedConnection.setAutoCommit(true);
+            }
+            this.IsTransaction = false;
+            this.closeConnection();
+        } catch (SQLException var2) {
+            LogTool.handleLog("提交事务异常!" + var2.getMessage());
+        }
+    }
+
+
+    public void rollbackTransaction() {
+        try {
+            if (this.sharedConnection != null) {
+                this.sharedConnection.rollback();
+                this.sharedConnection.setAutoCommit(true);
+            }
+            this.IsTransaction = false;
+            this.closeConnection();
+        } catch (SQLException var2) {
+            LogTool.handleLog("回滚事务异常!" + var2.getMessage());
+        }
+    }
+
+
 }
 
 

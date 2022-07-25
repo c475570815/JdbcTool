@@ -36,6 +36,12 @@
       "driverClassName": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
       "port": 1433,
       "jdbcTemplate": "jdbc:sqlserver://{{IP}}:{{PORT}};{{END_PARAM}}"
+    },
+    {
+      "type": "sqlserver",
+      "driverClassName": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+      "port": 1433,
+      "jdbcTemplate": "jdbc:sqlserver://{{IP}}:{{PORT}};{{END_PARAM}}"
     }
   ],
   "druidConfig": {

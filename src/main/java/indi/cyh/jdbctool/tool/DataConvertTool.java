@@ -1,5 +1,6 @@
 package indi.cyh.jdbctool.tool;
 
+import com.alibaba.druid.proxy.jdbc.ClobProxyImpl;
 import indi.cyh.jdbctool.modle.ConvertType;
 import org.postgresql.util.Base64;
 import org.postgresql.util.PGobject;
@@ -9,10 +10,7 @@ import java.io.ObjectOutputStream;
 import java.sql.Clob;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author CYH
@@ -154,6 +152,8 @@ public class DataConvertTool {
                 case "java.lang.Boolean":
                 case "boolean":
                     return convertToBoolean(sourceTypeName, res);
+                case "oracle.sql.STRUCT":
+                    return res;
                 default:
                     return convertToString(sourceTypeName, res);
             }
@@ -228,23 +228,63 @@ public class DataConvertTool {
     }
 
     private static String convertToString(String sourceTypeName, Object res) {
-        switch (sourceTypeName) {
-            case "java.sql.Timestamp":
-            case "java.sql.Date":
-                return timestampToString(res);
-            case "org.postgresql.util.PGobject":
-                return pgObjectToString(res);
-            case "[B":
-                return byteToBase64(res);
-            case "javax.sql.rowset.serial.SerialClob":
-                try {
+        try {
+            switch (sourceTypeName) {
+                case "java.sql.Timestamp":
+                case "java.sql.Date":
+                    return timestampToString(res);
+                case "org.postgresql.util.PGobject":
+                    return pgObjectToString(res);
+                case "[B":
+                    return byteToBase64(res);
+                case "com.alibaba.druid.proxy.jdbc.ClobProxyImpl":
+                    return StringTool.clobToString(((ClobProxyImpl) res).getRawClob());
+                case "javax.sql.rowset.serial.SerialClob":
                     return StringTool.clobToString((Clob) res);
-                } catch (Exception e) {
+                default:
                     return res.toString();
-                }
-            default:
-                return res.toString();
+            }
+        } catch (Exception e) {
+            return res.toString();
         }
+    }
+
+    /**
+     * 查询listmap时 转换一些特殊类型为String
+     *
+     * @param pageData
+     * @return java.lang.Object
+     * @author cyh
+     * 2020/5/28 22:15
+     **/
+    public static Object resultConvert(List<Map<String, Object>> pageData) {
+        HashMap<String, ConvertType> convertMap = new HashMap<>();
+        List<String> hasCheckColumnList = new ArrayList<>();
+        for (Map<String, Object> row : pageData) {
+            DataConvertTool.getConvertColumn(pageData.get(0), hasCheckColumnList, convertMap);
+            if (convertMap.keySet().size() > 0) {
+                for (String columnKey : convertMap.keySet()) {
+                    Object columnData = row.get(columnKey);
+                    if (columnData != null) {
+                        switch (convertMap.get(columnKey)) {
+                            case BYTE_TO_BASE64:
+                                row.put(columnKey, DataConvertTool.byteToBase64(columnData));
+                                break;
+                            case TIMESTAMP_TO_STRING:
+                                row.put(columnKey, DataConvertTool.timestampToString(columnData));
+                                break;
+                            case PGOBJECT_TO_STRING:
+                                row.put(columnKey, DataConvertTool.pgObjectToString(columnData));
+                            default:
+                                break;
+                        }
+                    } else {
+                        row.put(columnKey, "");
+                    }
+                }
+            }
+        }
+        return pageData;
     }
 
 

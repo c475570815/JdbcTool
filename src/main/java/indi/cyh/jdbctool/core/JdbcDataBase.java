@@ -1,6 +1,8 @@
 package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.sun.istack.internal.Nullable;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
@@ -27,19 +29,6 @@ public class JdbcDataBase {
      * jdbc处理工具
      */
     JdbcHandler handler;
-
-    /**
-     * 从配置文件中获取是否为调试模式
-     */
-    /**
-     * 日志工具
-     *
-     * @param null
-     * @return
-     * @author cyh
-     * 2020/7/16 21:16
-     **/
-    private final LogTool log = new LogTool();
 
 
     @Override
@@ -117,15 +106,10 @@ public class JdbcDataBase {
      * @date 2020/5/29 0029 16:44
      **/
     public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        LogTool.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        T t = null;
-        try {
-            t = handler.querySingleTypeResult(sql, requiredType, params);
-        } catch (Exception e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
-        }
-        log.handleTimeLost(start);
+        T t = handler.querySingleTypeResult(sql, requiredType, params);
+        LogTool.handleTimeLost(start);
         return t;
     }
 
@@ -139,17 +123,10 @@ public class JdbcDataBase {
      * @date 2020/7/10 0010 17:05
      **/
     public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        LogTool.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        List<T> t = null;
-        try {
-            t = handler.queryListSingleType(sql, requiredType, params);
-        } catch (SQLException e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询异常", true, e);
-            return new ArrayList<>();
-        }
-        //getJdbcTemplate().query(sql, params, (resultSet, i) -> (T) resultSet.getObject(1));
-        log.handleTimeLost(start);
+        List<T> t = handler.queryListSingleType(sql, requiredType, params);
+        LogTool.handleTimeLost(start);
         return t;
     }
 
@@ -163,16 +140,11 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/4/11 15:41
      **/
-    public <T> T queryOneRow(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+    public <T> T queryObject(String sql, Class<T> requiredType, @Nullable Object... params) {
+        LogTool.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        T t = null;
-        try {
-            t = handler.queryObject(sql, requiredType, params);
-        } catch (Exception e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
-        }
-        log.handleTimeLost(start);
+        T t = handler.queryObject(sql, requiredType, params);
+        LogTool.handleTimeLost(start);
         return t;
     }
 
@@ -186,17 +158,11 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/5/28 22:12
      **/
-    public <T> List<T> queryList(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+    public <T> List<T> queryListObject(String sql, Class<T> requiredType, @Nullable Object... params) {
+        LogTool.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-
-        List<T> t = new ArrayList<>();
-        try {
-            t = handler.queryObjectList(sql, requiredType, params);
-        } catch (Exception e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
-        }
-        log.handleTimeLost(start);
+        List<T> t = handler.queryObjectList(sql, requiredType, params);
+        LogTool.handleTimeLost(start);
         return t;
     }
 
@@ -209,16 +175,11 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/5/28 22:12
      **/
-    public Map<String, Object> queryForMap(String sql, @Nullable Object... params) {
-        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+    public Map<String, Object> queryMap(String sql, @Nullable Object... params) {
+        LogTool.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-        Map<String, Object> map = null;
-        try {
-            map = handler.queryMap(sql, params);
-        } catch (Exception e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
-        }
-        log.handleTimeLost(start);
+        Map<String, Object> map = handler.queryMap(sql, params);
+        LogTool.handleTimeLost(start);
         return map;
     }
 
@@ -231,18 +192,47 @@ public class JdbcDataBase {
      * 2020/4/11 18:11
      **/
     public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
-        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        LogTool.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
-
-        List<Map<String, Object>> list = new ArrayList<>();
-        try {
-            list = handler.queryListMap(sql, params);
-        } catch (Exception e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
-        }
-        log.handleTimeLost(start);
+        List<Map<String, Object>> list = handler.queryListMap(sql, params);
+        LogTool.handleTimeLost(start);
         return list;
     }
+
+    /**
+     * 查询jsonObject
+     *
+     * @param sql
+     * @param params
+     * @return com.alibaba.fastjson.JSONObject
+     * @author CYH
+     * @date 2022/7/25 10:41
+     **/
+    public JSONObject queryJsonObject(String sql, @Nullable Object... params) {
+        LogTool.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        long start = System.currentTimeMillis();
+        JSONObject object = handler.queryJsonObject(sql, params);
+        LogTool.handleTimeLost(start);
+        return object;
+    }
+
+    /**
+     * 查询JSONArray
+     *
+     * @param sql
+     * @param params
+     * @return com.alibaba.fastjson.JSONArray
+     * @author CYH
+     * @date 2022/7/25 10:42
+     **/
+    public JSONArray queryJSONArray(String sql, @Nullable Object... params) {
+        LogTool.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        long start = System.currentTimeMillis();
+        JSONArray array = handler.queryJsonArray(sql, params);
+        LogTool.handleTimeLost(start);
+        return array;
+    }
+
 
     /**
      * 查询分页数据
@@ -264,7 +254,7 @@ public class JdbcDataBase {
         resMap.put("pageData", isResultString ? resultConvert(pageData) : pageData);
         resMap.put("page", page);
         resMap.put("rows", rows);
-        log.handleTimeLost(start);
+        LogTool.handleTimeLost(start);
         return resMap;
     }
 
@@ -308,7 +298,6 @@ public class JdbcDataBase {
         }
     }
 
-
     /**
      * 用于执行 DML 语句(INSERT、UPDATE、DELETE)
      *
@@ -319,7 +308,7 @@ public class JdbcDataBase {
      * 2020/4/11 18:05
      **/
     public int executeDMLSql(String sql, @Nullable Object... params) {
-        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        LogTool.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         return handler.update(sql, params);
     }
 
@@ -375,7 +364,7 @@ public class JdbcDataBase {
      * @author CYH
      * @date 2020/5/29 0029 17:01
      **/
-    public <T> void delectbyId(Class<T> requiredType, Object id) {
+    public <T> void deleteById(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTableName(requiredType);
         String sql = "DELETE FROM " + tableName + "  where  " +
@@ -392,7 +381,7 @@ public class JdbcDataBase {
      * @author CYH
      * @date 2020/5/29 0029 17:08
      **/
-    public <T> void delectbyIds(Class<T> requiredType, List<Object> ids) {
+    public <T> void deleteByIds(Class<T> requiredType, List<Object> ids) {
         List<String> isList = new ArrayList<>();
         for (Object id : ids) {
             isList.add(id.toString());
@@ -418,7 +407,7 @@ public class JdbcDataBase {
         String tableName = EntityTool.getTableName(requiredType);
         String sql = "select * FROM " + tableName + "  where  " +
                 primaryField + "=?";
-        return queryOneRow(sql, requiredType, id);
+        return queryObject(sql, requiredType, id);
     }
 
     /**
@@ -439,7 +428,7 @@ public class JdbcDataBase {
         String tableName = EntityTool.getTableName(requiredType);
         String sql = "select * FROM " + tableName + "  where  " +
                 primaryField + " in  (" + StringTool.getSqlValueStr(isList) + ")";
-        return queryList(sql, requiredType);
+        return queryListObject(sql, requiredType);
     }
 
     /**
@@ -479,69 +468,39 @@ public class JdbcDataBase {
         executeDMLSql(sql, params);
     }
 
-//    /**
-//     * 开启一个事务
-//     *
-//     * @param
-//     * @return java.lang.String  返回事务id
-//     * @author cyh
-//     * 2020/7/4 9:41
-//     **/
-//    public String beginTransaction() throws Exception {
-//        try {
-//            TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
-//            String transactionId = UUID.randomUUID().toString();
-//            transcationMap.put(transactionId, transactionStatus);
-//            LogTool.handleLog("开启事务:%s", transactionId);
-//            return transactionId;
-//        } catch (Exception e) {
-//            throw new Exception("事务开启异常:" + e.getMessage());
-//        }
-//    }
-//
-//    /**
-//     * 提交一个事务
-//     *
-//     * @param transactionId 事务id
-//     * @return void
-//     * @author cyh
-//     * 2020/7/4 9:42
-//     **/
-//    public void commitTransaction(String transactionId) {
-//        if (transcationMap.containsKey(transactionId)) {
-//            try {
-//                transactionManager.commit(transcationMap.get(transactionId));
-//                transcationMap.remove(transactionId);
-//                LogTool.handleLog("事务已提交:%s", transactionId);
-//            } catch (Exception e) {
-//                LogTool.handleExceptionLog("事务提交异常%s", true, e, transactionId);
-//            }
-//        } else {
-//            System.out.println("事务提交异常--错误的transactionId:" + transactionId);
-//        }
-//
-//    }
-//
-//    /**
-//     * 回滚一个事务
-//     *
-//     * @param transactionId 事务id
-//     * @return void
-//     * @author cyh
-//     * 2020/7/4 9:42
-//     **/
-//    public void rollbackTransaction(String transactionId) {
-//        if (transcationMap.containsKey(transactionId)) {
-//            try {
-//                transactionManager.rollback(transcationMap.get(transactionId));
-//                transcationMap.remove(transactionId);
-//            } catch (Exception e) {
-//                LogTool.handleExceptionLog("事务回归异常%s", true, e, transactionId);
-//            }
-//        } else {
-//            System.out.println("事务回归异常--错误的transactionId:" + transactionId);
-//        }
-//    }
+    /**
+     * 开启一个事务
+     *
+     * @param
+     * @return java.lang.String  返回事务id
+     * @author cyh
+     * 2020/7/4 9:41
+     **/
+    public void beginTransaction() throws Exception {
+        handler.beginTransaction();
+    }
+
+    /**
+     * 提交一个事务
+     *
+     * @return void
+     * @author cyh
+     * 2020/7/4 9:42
+     **/
+    public void commitTransaction() {
+        handler.commitTransaction();
+    }
+
+    /**
+     * 回滚一个事务
+     *
+     * @return void
+     * @author cyh
+     * 2020/7/4 9:42
+     **/
+    public void rollbackTransaction() {
+        handler.rollbackTransaction();
+    }
 
     /**
      * 用于执行DDL  sql
@@ -552,7 +511,7 @@ public class JdbcDataBase {
      * @date 2020/5/15 0015 16:34
      **/
     public void executeDDLSql(String sql) {
-        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl());
+        LogTool.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl());
         try {
             handler.getStatement().execute(sql);
         } catch (SQLException e) {
