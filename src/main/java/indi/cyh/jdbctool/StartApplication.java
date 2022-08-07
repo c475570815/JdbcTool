@@ -13,7 +13,7 @@ public class StartApplication {
 
 
     public static void main(String[] args) {
-        String sql = "SELECT *  from sys.sys_config";
+        String sql = "SELECT *  from test_table";
         JdbcDataBase db = DataSourceFactory.getJdbcDataBase();
         System.out.println(JSONObject.toJSONString(db.queryListMap(sql)));
     }

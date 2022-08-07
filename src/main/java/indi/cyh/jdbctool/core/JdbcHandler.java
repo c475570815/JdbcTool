@@ -63,7 +63,7 @@ public class JdbcHandler {
     }
 
     private ResultSet queryResultSet(String sql, @Nullable Object... params) {
-        PreparedStatement preparedStatement = setSqlParam(sql, null, params);
+        PreparedStatement preparedStatement = setSqlParam(sql,  params);
         try {
             return preparedStatement.executeQuery();
         } catch (SQLException e) {
@@ -72,14 +72,10 @@ public class JdbcHandler {
         }
     }
 
-    private PreparedStatement setSqlParam(String sql, Integer returnMode, @Nullable Object... params) {
+    private PreparedStatement setSqlParam(String sql, @Nullable Object... params) {
         try {
             PreparedStatement preparedStatement;
-            if (returnMode != null) {
-                preparedStatement = getConnecting().prepareStatement(sql, returnMode);
-            } else {
-                preparedStatement = getConnecting().prepareStatement(sql);
-            }
+            preparedStatement = getConnecting().prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             for (int i = 0; i < params.length; i++) {
                 preparedStatement.setObject(i, params[i]);
             }
@@ -221,24 +217,12 @@ public class JdbcHandler {
 
     public int update(String sql, @Nullable Object... params) {
         try {
-            PreparedStatement preparedStatement = setSqlParam(sql, null, params);
+            PreparedStatement preparedStatement = setSqlParam(sql, params);
             return preparedStatement.executeUpdate();
         } catch (SQLException e) {
             LogTool.handleLog("更新语句执行异常:%s", e.getMessage());
             throw new RuntimeException(e);
         }
-    }
-
-    public Object updateReturnIntPrimary(String sql, Object[] params) throws SQLException {
-        //返回主键预处理
-        PreparedStatement preparedStatement = setSqlParam(sql, PreparedStatement.RETURN_GENERATED_KEYS, params);
-        preparedStatement.executeUpdate();
-        ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-        if (generatedKeys.next()) {
-            return generatedKeys.getLong(1);
-        }
-        LogTool.handleLog("获取主键失败");
-        return "";
     }
 }
 
