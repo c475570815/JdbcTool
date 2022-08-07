@@ -142,12 +142,7 @@ public class JdbcDataBase {
         log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         List<T> t = null;
-        try {
-            t = handler.queryListSingleType(sql, requiredType, params);
-        } catch (SQLException e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询异常", true, e);
-            return new ArrayList<>();
-        }
+        t = handler.queryListSingleType(sql, requiredType, params);
         //getJdbcTemplate().query(sql, params, (resultSet, i) -> (T) resultSet.getObject(1));
         log.handleTimeLost(start);
         return t;
@@ -474,69 +469,39 @@ public class JdbcDataBase {
         executeDMLSql(sql, params);
     }
 
-//    /**
-//     * 开启一个事务
-//     *
-//     * @param
-//     * @return java.lang.String  返回事务id
-//     * @author cyh
-//     * 2020/7/4 9:41
-//     **/
-//    public String beginTransaction() throws Exception {
-//        try {
-//            TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
-//            String transactionId = UUID.randomUUID().toString();
-//            transcationMap.put(transactionId, transactionStatus);
-//            LogTool.handleLog("开启事务:%s", transactionId);
-//            return transactionId;
-//        } catch (Exception e) {
-//            throw new Exception("事务开启异常:" + e.getMessage());
-//        }
-//    }
-//
-//    /**
-//     * 提交一个事务
-//     *
-//     * @param transactionId 事务id
-//     * @return void
-//     * @author cyh
-//     * 2020/7/4 9:42
-//     **/
-//    public void commitTransaction(String transactionId) {
-//        if (transcationMap.containsKey(transactionId)) {
-//            try {
-//                transactionManager.commit(transcationMap.get(transactionId));
-//                transcationMap.remove(transactionId);
-//                LogTool.handleLog("事务已提交:%s", transactionId);
-//            } catch (Exception e) {
-//                LogTool.handleExceptionLog("事务提交异常%s", true, e, transactionId);
-//            }
-//        } else {
-//            System.out.println("事务提交异常--错误的transactionId:" + transactionId);
-//        }
-//
-//    }
-//
-//    /**
-//     * 回滚一个事务
-//     *
-//     * @param transactionId 事务id
-//     * @return void
-//     * @author cyh
-//     * 2020/7/4 9:42
-//     **/
-//    public void rollbackTransaction(String transactionId) {
-//        if (transcationMap.containsKey(transactionId)) {
-//            try {
-//                transactionManager.rollback(transcationMap.get(transactionId));
-//                transcationMap.remove(transactionId);
-//            } catch (Exception e) {
-//                LogTool.handleExceptionLog("事务回归异常%s", true, e, transactionId);
-//            }
-//        } else {
-//            System.out.println("事务回归异常--错误的transactionId:" + transactionId);
-//        }
-//    }
+    /**
+     * 开启一个事务
+     *
+     * @param
+     * @return java.lang.String  返回事务id
+     * @author cyh
+     * 2020/7/4 9:41
+     **/
+    public void beginTransaction() throws Exception {
+        handler.beginTransaction();
+    }
+
+    /**
+     * 提交一个事务
+     *
+     * @return void
+     * @author cyh
+     * 2020/7/4 9:42
+     **/
+    public void commitTransaction() {
+        handler.commitTransaction();
+    }
+
+    /**
+     * 回滚一个事务
+     *
+     * @return void
+     * @author cyh
+     * 2020/7/4 9:42
+     **/
+    public void rollbackTransaction() {
+        handler.rollbackTransaction();
+    }
 
     /**
      * 用于执行DDL  sql
