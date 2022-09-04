@@ -71,7 +71,7 @@ public class JdbcHandler {
     }
 
     private ResultSet queryResultSet(String sql, @Nullable Object... params) {
-        PreparedStatement preparedStatement = setSqlParam(sql, params);
+        PreparedStatement preparedStatement = setSqlParam(sql, false, params);
         try {
             return preparedStatement.executeQuery();
         } catch (SQLException e) {
@@ -80,12 +80,12 @@ public class JdbcHandler {
         }
     }
 
-    private PreparedStatement setSqlParam(String sql, @Nullable Object... params) {
+    private PreparedStatement setSqlParam(String sql, boolean isUpdate, @Nullable Object... params) {
         try {
             PreparedStatement preparedStatement;
-            preparedStatement = getConnecting().prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            preparedStatement = getConnecting().prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, isUpdate ? ResultSet.CONCUR_UPDATABLE: ResultSet.CONCUR_READ_ONLY);
             for (int i = 0; i < params.length; i++) {
-                preparedStatement.setObject(i, params[i]);
+                preparedStatement.setObject(i+1, params[i]);
             }
             return preparedStatement;
         } catch (SQLException e) {
@@ -319,7 +319,7 @@ public class JdbcHandler {
 
 
     public int update(String sql, @Nullable Object... params) {
-        PreparedStatement preparedStatement = setSqlParam(sql, params);
+        PreparedStatement preparedStatement = setSqlParam(sql, false, params);
         try {
             return preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -333,7 +333,7 @@ public class JdbcHandler {
 
     public Object updateReturnIntPrimary(String sql, Object[] params) {
         //返回主键预处理
-        PreparedStatement preparedStatement = setSqlParam(sql, PreparedStatement.RETURN_GENERATED_KEYS, params);
+        PreparedStatement preparedStatement = setSqlParam(sql, false, PreparedStatement.RETURN_GENERATED_KEYS, params);
         try {
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();

@@ -326,7 +326,7 @@ public class JdbcDataBase {
      * @author CYH
      * @date 2020/5/29 0029 15:44
      **/
-    public <T> void insert(Class<T> requiredType, T t) throws NoSuchFieldException, IllegalAccessException, SQLException {
+    public <T> int insert(Class<T> requiredType, T t) throws NoSuchFieldException, IllegalAccessException, SQLException {
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         //语句拼接
         StringBuilder insertSqlBuilder = new StringBuilder("INSERT INTO ");
@@ -353,7 +353,7 @@ public class JdbcDataBase {
         insertSqlBuilder.append(")");
         String sql = insertSqlBuilder.toString();
         Object[] params = valueList.toArray();
-        executeDMLSql(sql, params);
+        return executeDMLSql(sql, params);
     }
 
     /**

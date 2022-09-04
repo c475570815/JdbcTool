@@ -139,16 +139,18 @@ public class DataConvertTool {
                 case "java.lang.Integer":
                 case "int":
                     return convertToInteger(sourceTypeName, res);
+                case "java.sql.Date":
                 case "java.util.Date":
-                    return convertToUtilDate(sourceTypeName, res);
+                    return convertToDate(targetTypename, res);
                 case "java.sql.Timestamp":
                     return convertToTimestamp(sourceTypeName, res);
-                case "java.sql.Date":
-                    return convertToSqlDate(sourceTypeName, res);
+                case "java.lang.Long":
                 case "long":
                     return convertToLong(sourceTypeName, res);
+                case "java.lang.Double":
                 case "double":
                     return convertToDouble(sourceTypeName, res);
+                case "java.lang.Float":
                 case "float":
                     return convertToFloat(sourceTypeName, res);
                 case "java.lang.Boolean":
@@ -191,14 +193,10 @@ public class DataConvertTool {
         }
     }
 
-    private static java.sql.Date convertToSqlDate(String sourceTypeName, Object res) {
-        switch (sourceTypeName) {
-            default:
-                return new java.sql.Date(((java.sql.Timestamp) res).getTime());
-        }
-    }
-
     private static long convertToLong(String sourceTypeName, Object res) {
+        if (res == null) {
+            return 0;
+        }
         switch (sourceTypeName) {
             default:
                 return Long.parseLong(res.toString());
@@ -212,10 +210,13 @@ public class DataConvertTool {
         }
     }
 
-    private static Date convertToUtilDate(String sourceTypeName, Object res) {
-        switch (sourceTypeName) {
+    private static Date convertToDate(String targetTypename, Object res) {
+        long timeStamp = ((java.util.Date) res).getTime();
+        switch (targetTypename) {
+            case "java.sql.Date":
+                return new java.sql.Date(timeStamp);
             default:
-                return new Date(((java.sql.Timestamp) res).getTime());
+                return new Date(timeStamp);
         }
     }
 
