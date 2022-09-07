@@ -6,13 +6,27 @@
 
     <groupId>indi.cyh</groupId>
     <artifactId>JdbcTool</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-SNAPSHOT</version>
     <!--整体文件配置-->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
     </properties>
+
+
+    <distributionManagement>
+        <repository>
+            <id>maven-releases</id>
+            <name>maven-public</name>
+            <url>http://gzbdc.in.3322.org:40040/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>maven-snapshots</id>
+            <name>maven-snapshots</name>
+            <url>http://gzbdc.in.3322.org:40040/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <dependencies>
 
@@ -23,14 +37,6 @@
             <version>5.3.1</version>
         </dependency>
 
-
-        <!--sqlserver driver-->
-        <dependency>
-            <groupId>com.microsoft.sqlserver</groupId>
-            <artifactId>sqljdbc4</artifactId>
-            <version>4.2</version>
-            <scope>provided</scope>
-        </dependency>
 
         <!-- mysql driver -->
         <dependency>
@@ -49,7 +55,6 @@
             <version>11.2.0.4</version>
             <scope>provided</scope>
         </dependency>
-
 
 
         <!-- postgresql driver -->
