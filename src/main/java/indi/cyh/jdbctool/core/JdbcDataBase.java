@@ -466,7 +466,7 @@ public class JdbcDataBase {
      * @author CYH
      * @date 2020/5/29 0029 17:01
      **/
-    public <T> void delectbyId(Class<T> requiredType, Object id) {
+    public <T> void deleteById(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
         String sql = "DELETE FROM " + tableName + "  where  " +
@@ -483,7 +483,7 @@ public class JdbcDataBase {
      * @author CYH
      * @date 2020/5/29 0029 17:08
      **/
-    public <T> void delectbyIds(Class<T> requiredType, List<Object> ids) {
+    public <T> void deleteByIds(Class<T> requiredType, List<Object> ids) {
         List<String> isList = new ArrayList<>();
         for (Object id : ids) {
             isList.add(id.toString());
@@ -504,7 +504,7 @@ public class JdbcDataBase {
      * @author CYH
      * @date 2020/5/29 0029 17:28
      **/
-    public <T> T findRowById(Class<T> requiredType, Object id) {
+    public <T> T queryOneRowById(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
         String tableName = EntityTool.getTabelName(requiredType);
         String sql = "select * FROM " + tableName + "  where  " +
@@ -586,6 +586,7 @@ public class JdbcDataBase {
             LogTool.handleLog("开启事务:%s", transactionId);
             return transactionId;
         } catch (Exception e) {
+            LogTool.handleExceptionLog("事务开启异常:%s", true, e, e.getMessage());
             throw new Exception("事务开启异常:" + e.getMessage());
         }
     }
@@ -605,6 +606,7 @@ public class JdbcDataBase {
                 transcationMap.remove(transactionId);
                 LogTool.handleLog("事务已提交:%s", transactionId);
             } catch (Exception e) {
+                e.printStackTrace();
                 LogTool.handleExceptionLog("事务提交异常%s", true, e, transactionId);
             }
         } else {
