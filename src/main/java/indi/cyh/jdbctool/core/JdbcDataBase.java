@@ -1,6 +1,7 @@
 package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import indi.cyh.jdbctool.modle.DBType;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
@@ -19,8 +20,6 @@ import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @ClassName JdbcDateBase
@@ -30,28 +29,12 @@ import java.util.regex.Pattern;
  */
 public class JdbcDataBase {
 
-
-    //sql 匹配相应参数
-    private static final Pattern selectPattern;
-    private static final Pattern fromPattern;
-    private static final Pattern PATTERN_BRACKET;
-    private static final Pattern PATTERN_SELECT;
-    private static final Pattern PATTERN_DISTINCT;
-    private static final Pattern rxOrderBy;
-
     ////事务相关
     private static final TransactionDefinition definition;
     private final DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
     private final LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
 
     static {
-        //sql 匹配相应参数 赋值
-        selectPattern = Pattern.compile("\\s*(SELECT|EXECUTE|CALL)\\s", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        fromPattern = Pattern.compile("\\s*FROM\\s", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        PATTERN_BRACKET = Pattern.compile("(\\(|\\)|[^\\(\\)]*)");
-        PATTERN_SELECT = Pattern.compile("select([\\W\\w]*)from", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        PATTERN_DISTINCT = Pattern.compile("\\A\\s+DISTINCT\\s", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        rxOrderBy = Pattern.compile("\\bORDER\\s+BY\\s+([\\W\\w]*)(ASC|DESC)+", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
         //事务参数赋默认值
         definition = new TransactionDefinition() {
             @Override
@@ -87,6 +70,7 @@ public class JdbcDataBase {
      */
     DruidDataSource dataSource;
 
+    DBType dbType;
     /**
      * 从配置文件中获取是否为调试模式
      */
@@ -124,6 +108,7 @@ public class JdbcDataBase {
 
     public JdbcDataBase(DruidDataSource dataSource) {
         this.dataSource = dataSource;
+        dbType = DBType.getDbTypeByDriverClassName(dataSource.getDriverClassName());
         transactionManager.setDataSource(dataSource);
     }
 
@@ -318,36 +303,12 @@ public class JdbcDataBase {
      * @date 2020/4/28 0028 16:12
      **/
     private PageQueryInfo getPageQueryInfo(Integer page, Integer rows, String sql) throws Exception {
-        long skip = (page - 1) * rows;
-        Matcher matcherSelect = PATTERN_SELECT.matcher(sql);
-        if (!matcherSelect.find()) {
-            throw new Exception("build paging querySql error:canot find select from");
-        } else {
-            String sqlSelectCols = matcherSelect.group(1);
-            String countSql = String.format("select COUNT(1) from (%s) pageTable", sql);
-            Matcher matcherDistinct = PATTERN_DISTINCT.matcher(sqlSelectCols);
-            int lastOrderIndex = sql.toLowerCase().lastIndexOf("order");
-            String sqlOrderBy = null;
-            if (lastOrderIndex > -1) {
-                sqlOrderBy = sql.substring(lastOrderIndex);
-            }
-
-            int firstSelectIndex = sql.toLowerCase().indexOf("select");
-            String formatSQL;
-            if (!matcherDistinct.find() && !"*".equalsIgnoreCase(sqlSelectCols.trim())) {
-                formatSQL = sql.substring(firstSelectIndex + 6);
-            } else {
-                formatSQL = " peta_table.* from (" + sql + ") peta_table ";
-                sqlOrderBy = sqlOrderBy == null ? null : sqlOrderBy.replaceAll("([A-Za-z0-9_]*)\\.", "peta_table.");
-            }
-
-            String pageSql = String.format("SELECT * FROM (SELECT ROW_NUMBER() OVER (%s) peta_rn, %s) peta_paged WHERE peta_rn>" + skip + " AND peta_rn<=" + (skip + (long) rows) + "", sqlOrderBy == null ? "ORDER BY NULL" : sqlOrderBy, formatSQL);
-            PageQueryInfo queryInfo = new PageQueryInfo();
-            queryInfo.setPageSql(pageSql);
-            queryInfo.setCountSql(countSql);
-            return queryInfo;
-        }
+        PageQueryInfo queryInfo = new PageQueryInfo();
+        queryInfo.setPageSql(SqlHandler.getPageSql(page, rows, sql, dbType));
+        queryInfo.setCountSql(SqlHandler.getSelectCountSql(sql, dbType));
+        return queryInfo;
     }
+
 
     /**
      * 查询listmap时 转换一些特殊类型为String
