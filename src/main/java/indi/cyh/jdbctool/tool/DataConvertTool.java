@@ -247,44 +247,43 @@ public class DataConvertTool {
         } catch (Exception e) {
             return res.toString();
         }
-    }
-
-    /**
-     * 查询listmap时 转换一些特殊类型为String
-     *
-     * @param pageData
-     * @return java.lang.Object
-     * @author cyh
-     * 2020/5/28 22:15
-     **/
-    public static Object resultConvert(List<Map<String, Object>> pageData) {
-        HashMap<String, ConvertType> convertMap = new HashMap<>();
-        List<String> hasCheckColumnList = new ArrayList<>();
-        for (Map<String, Object> row : pageData) {
-            DataConvertTool.getConvertColumn(pageData.get(0), hasCheckColumnList, convertMap);
-            if (convertMap.keySet().size() > 0) {
-                for (String columnKey : convertMap.keySet()) {
-                    Object columnData = row.get(columnKey);
-                    if (columnData != null) {
-                        switch (convertMap.get(columnKey)) {
-                            case BYTE_TO_BASE64:
-                                row.put(columnKey, DataConvertTool.byteToBase64(columnData));
-                                break;
-                            case TIMESTAMP_TO_STRING:
-                                row.put(columnKey, DataConvertTool.timestampToString(columnData));
-                                break;
-                            case PGOBJECT_TO_STRING:
-                                row.put(columnKey, DataConvertTool.pgObjectToString(columnData));
-                            default:
-                                break;
+        /**
+         * 查询listmap时 转换一些特殊类型为String
+         *
+         * @param pageData
+         * @return java.lang.Object
+         * @author cyh
+         * 2020/5/28 22:15
+         **/
+        public static Object resultConvert(List<Map<String, Object>> pageData) {
+            HashMap<String, ConvertType> convertMap = new HashMap<>();
+            List<String> hasCheckColumnList = new ArrayList<>();
+            for (Map<String, Object> row : pageData) {
+                DataConvertTool.getConvertColumn(pageData.get(0), hasCheckColumnList, convertMap);
+                if (convertMap.keySet().size() > 0) {
+                    for (String columnKey : convertMap.keySet()) {
+                        Object columnData = row.get(columnKey);
+                        if (columnData != null) {
+                            switch (convertMap.get(columnKey)) {
+                                case BYTE_TO_BASE64:
+                                    row.put(columnKey, DataConvertTool.byteToBase64(columnData));
+                                    break;
+                                case TIMESTAMP_TO_STRING:
+                                    row.put(columnKey, DataConvertTool.timestampToString(columnData));
+                                    break;
+                                case PGOBJECT_TO_STRING:
+                                    row.put(columnKey, DataConvertTool.pgObjectToString(columnData));
+                                default:
+                                    break;
+                            }
+                        } else {
+                            row.put(columnKey, "");
                         }
-                    } else {
-                        row.put(columnKey, "");
                     }
                 }
             }
+            return pageData;
         }
-        return pageData;
     }
 
 
