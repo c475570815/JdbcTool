@@ -30,6 +30,7 @@ public class JdbcDataBase {
      */
     JdbcHandler handler;
 
+    DBType dbType;
 
     @Override
     public int hashCode() {
@@ -53,6 +54,7 @@ public class JdbcDataBase {
     }
 
     public JdbcDataBase(DruidDataSource dataSource) {
+        dbType = DBType.getDbTypeByDriverClassName(dataSource.getDriverClassName());
         this.handler = new JdbcHandler(dataSource);
     }
 
@@ -267,35 +269,10 @@ public class JdbcDataBase {
      * @date 2020/4/28 0028 16:12
      **/
     private PageQueryInfo getPageQueryInfo(Integer page, Integer rows, String sql) throws Exception {
-        long skip = (page - 1) * rows;
-        Matcher matcherSelect = SqlRegular.PATTERN_SELECT.matcher(sql);
-        if (!matcherSelect.find()) {
-            throw new Exception("build paging querySql error:canot find select from");
-        } else {
-            String sqlSelectCols = matcherSelect.group(1);
-            String countSql = String.format("select COUNT(1) from (%s) pageTable", sql);
-            Matcher matcherDistinct = SqlRegular.PATTERN_DISTINCT.matcher(sqlSelectCols);
-            int lastOrderIndex = sql.toLowerCase().lastIndexOf("order");
-            String sqlOrderBy = null;
-            if (lastOrderIndex > -1) {
-                sqlOrderBy = sql.substring(lastOrderIndex);
-            }
-
-            int firstSelectIndex = sql.toLowerCase().indexOf("select");
-            String formatSQL;
-            if (!matcherDistinct.find() && !"*".equalsIgnoreCase(sqlSelectCols.trim())) {
-                formatSQL = sql.substring(firstSelectIndex + 6);
-            } else {
-                formatSQL = " peta_table.* from (" + sql + ") peta_table ";
-                sqlOrderBy = sqlOrderBy == null ? null : sqlOrderBy.replaceAll("([A-Za-z0-9_]*)\\.", "peta_table.");
-            }
-
-            String pageSql = String.format("SELECT * FROM (SELECT ROW_NUMBER() OVER (%s) peta_rn, %s) peta_paged WHERE peta_rn>" + skip + " AND peta_rn<=" + (skip + (long) rows) + "", sqlOrderBy == null ? "ORDER BY NULL" : sqlOrderBy, formatSQL);
-            PageQueryInfo queryInfo = new PageQueryInfo();
-            queryInfo.setPageSql(pageSql);
-            queryInfo.setCountSql(countSql);
-            return queryInfo;
-        }
+        PageQueryInfo queryInfo = new PageQueryInfo();
+        queryInfo.setPageSql(SqlHandler.getPageSql(page, rows, sql, dbType));
+        queryInfo.setCountSql(SqlHandler.getSelectCountSql(sql, dbType));
+        return queryInfo;
     }
 
     /**

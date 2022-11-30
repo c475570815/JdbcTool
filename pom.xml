@@ -16,18 +16,19 @@
     <description>JdbcTool is a dbTool for java</description>
     <dependencies>
         <!--sqlserver driver-->
-<!--        <dependency>-->
-<!--            <groupId>com.microsoft.sqlserver</groupId>-->
-<!--            <artifactId>sqljdbc4</artifactId>-->
-<!--            <version>4.2</version>-->
-<!--            <scope>provided</scope>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>sqljdbc4</artifactId>
+            <version>4.2</version>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- mysql driver -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.19</version>
+            <scope>provided</scope>
         </dependency>
 
 
@@ -77,6 +78,11 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <encoding>UTF-8</encoding>
+                    <compilerArguments>
+                        <bootclasspath>
+                            ${java.home}\lib\rt.jar;${java.home}\lib\jce.jar
+                        </bootclasspath>
+                    </compilerArguments>
                 </configuration>
             </plugin>
             <plugin>

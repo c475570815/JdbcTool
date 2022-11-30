@@ -47,6 +47,7 @@
   "druidConfig": {
     "initialSize": 2,
     "maxActive": 100,
-    "keepAlive": true
+    "keepAlive": true,
+    "MinEvictableIdleTimeMillis": 180000
   }
 }
