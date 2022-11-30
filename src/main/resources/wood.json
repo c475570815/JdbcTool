@@ -5,10 +5,10 @@
       "sourceName": "mainDb",
       "type": "mysql",
       "ip": "127.0.0.1",
-      "port": 1521,
+      "port": 3306,
       "loginName": "root",
       "pwd": "1",
-      "endParam": "?serverTimezone=GMT",
+      "endParam": "localTest?useUnicode=true&useSSL=false&characterEncoding=UTF-8&serverTimezone=UTC",
       "queryTimeOut": 1
     },
   ],
@@ -17,7 +17,7 @@
       "type": "mysql",
       "driverClassName": "com.mysql.cj.jdbc.Driver",
       "port": 3306,
-      "jdbcTemplate": "jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+      "jdbcTemplate": "jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}",
     },
     {
       "type": "oracle",
@@ -30,12 +30,6 @@
       "driverClassName": "org.postgresql.Driver",
       "port": 5432,
       "jdbcTemplate": "jdbc:postgresql://{{IP}}:{{PORT}}/{{END_PARAM}}"
-    },
-    {
-      "type": "sqlserver",
-      "driverClassName": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-      "port": 1433,
-      "jdbcTemplate": "jdbc:sqlserver://{{IP}}:{{PORT}};{{END_PARAM}}"
     },
     {
       "type": "sqlserver",

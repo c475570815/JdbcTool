@@ -97,7 +97,7 @@ public class LogTool {
      * @author CYH
      * @date 2020/7/14 0014 16:47
      **/
-    public static void handleSqlLog(String sql, String jdbcUrl, @Nullable Object... params) {
+    public void handleSqlLog(String sql, String jdbcUrl, @Nullable Object... params) {
         try {
             //默认打开打印  当配置中设置了非调试模式则关闭打印
             if (ConsoleLogConfig.isEnable() || FileLogConfig.isEnable()) {
@@ -119,7 +119,7 @@ public class LogTool {
      * @author CYH
      * @date 2021/9/17 16:58
      **/
-    private static String getSqlLog(String sql, String jdbcUrl, Object[] params) {
+    private String getSqlLog(String sql, String jdbcUrl, Object[] params) {
         StringBuilder buffer = new StringBuilder();
         buffer.append(LOG_SEPARATOR);
         buffer.append(String.format("time:%s\n", timeFormat.format(new Date())));
@@ -151,7 +151,7 @@ public class LogTool {
      * @author CYH
      * @date 2021/9/17 16:41
      **/
-    private static String getTimeLostLogStr(long start) {
+    private String getTimeLostLogStr(long start) {
         long l = System.currentTimeMillis() - start;
         StringBuilder builder = new StringBuilder();
         long millis = 1;
@@ -182,7 +182,7 @@ public class LogTool {
      * @author CYH
      * @date 2020/7/14 0014 16:46
      **/
-    public static void handleTimeLost(long start) {
+    public void handleTimeLost(long start) {
         if (ConsoleLogConfig.isEnable() || FileLogConfig.isEnable()) {
             String timeLostLog = getTimeLostLogStr(start);
             handleLogCommon(timeLostLog, true);
