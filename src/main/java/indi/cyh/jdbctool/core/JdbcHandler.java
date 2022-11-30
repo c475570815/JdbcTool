@@ -83,9 +83,9 @@ public class JdbcHandler {
     private PreparedStatement setSqlParam(String sql, boolean isUpdate, @Nullable Object... params) {
         try {
             PreparedStatement preparedStatement;
-            preparedStatement = getConnecting().prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, isUpdate ? ResultSet.CONCUR_UPDATABLE: ResultSet.CONCUR_READ_ONLY);
+            preparedStatement = getConnecting().prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, isUpdate ? ResultSet.CONCUR_UPDATABLE : ResultSet.CONCUR_READ_ONLY);
             for (int i = 0; i < params.length; i++) {
-                preparedStatement.setObject(i+1, params[i]);
+                preparedStatement.setObject(i + 1, params[i]);
             }
             return preparedStatement;
         } catch (SQLException e) {
@@ -156,7 +156,7 @@ public class JdbcHandler {
                 return null;
             }
             rs.next();
-            return (T) DataConvertTool.convertObject(requiredType, rs.getObject(0));
+            return (T) DataConvertTool.convertObject(requiredType, rs.getObject(1));
         } catch (SQLException e) {
             LogTool.handleExceptionLog("查询异常", false, e);
             throw new RuntimeException(e);
@@ -175,10 +175,10 @@ public class JdbcHandler {
             }
             List<T> res = new ArrayList<>();
             while (rs.next()) {
-                res.add((T) DataConvertTool.convertObject(requiredType, rs.getObject(0)));
+                res.add((T) DataConvertTool.convertObject(requiredType, rs.getObject(1)));
             }
             return res;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LogTool.handleExceptionLog("查询异常", false, e);
             throw new RuntimeException(e);
         } finally {
@@ -193,17 +193,8 @@ public class JdbcHandler {
             if (resultSetIsEmpty(rs)) {
                 return null;
             }
-            Map<String, String> filedColumMap = EntityTool.getEntityFieldColumnMap(requiredType);
-            List<String> columList = new ArrayList<>(filedColumMap.values());
-            List<String> filedList = new ArrayList<>(filedColumMap.keySet());
-            T row = requiredType.newInstance();
             rs.next();
-            for (int i = 0; i < columList.size(); i++) {
-                String columName = columList.get(i);
-                String filedName = filedList.get(i);
-                EntityTool.setColumValue(row, filedName, rs.getObject(columName));
-            }
-            return row;
+            return rowToObject(requiredType, rs);
         } catch (Exception e) {
             LogTool.handleExceptionLog("查询异常", false, e);
             throw new RuntimeException(e);
@@ -213,6 +204,18 @@ public class JdbcHandler {
         }
     }
 
+    private <T> T rowToObject(Class<T> requiredType, ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException, IOException, NoSuchFieldException {
+        Map<String, String> filedColumMap = EntityTool.getEntityFieldColumnMap(requiredType);
+        List<String> columList = new ArrayList<>(filedColumMap.values());
+        List<String> filedList = new ArrayList<>(filedColumMap.keySet());
+        T row = requiredType.newInstance();
+        for (int i = 0; i < columList.size(); i++) {
+            String columName = columList.get(i);
+            String filedName = filedList.get(i);
+            EntityTool.setColumValue(row, filedName, rs.getObject(columName));
+        }
+        return row;
+    }
 
     public <T> List<T> queryObjectList(String sql, Class<T> requiredType, @Nullable Object... params) {
         ResultSet rs = this.queryResultSet(sql, params);
@@ -287,6 +290,7 @@ public class JdbcHandler {
             if (resultSetIsEmpty(rs)) {
                 return null;
             }
+            rs.next();
             return rowToJsonObject(rs);
         } catch (Exception e) {
             LogTool.handleExceptionLog("查询异常", false, e);

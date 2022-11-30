@@ -116,10 +116,10 @@ public class JdbcDataBase {
      * @date 2020/5/29 0029 16:44
      **/
     public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
-       log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         T t = handler.querySingleTypeResult(sql, requiredType, params);
-       log.handleTimeLost(start);
+        log.handleTimeLost(start);
         return t;
     }
 
@@ -133,10 +133,10 @@ public class JdbcDataBase {
      * @date 2020/7/10 0010 17:05
      **/
     public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
-       log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         List<T> t = handler.queryListSingleType(sql, requiredType, params);
-       log.handleTimeLost(start);
+        log.handleTimeLost(start);
         return t;
     }
 
@@ -151,10 +151,10 @@ public class JdbcDataBase {
      * 2020/4/11 15:41
      **/
     public <T> T queryObject(String sql, Class<T> requiredType, @Nullable Object... params) {
-       log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         T t = handler.queryObject(sql, requiredType, params);
-       log.handleTimeLost(start);
+        log.handleTimeLost(start);
         return t;
     }
 
@@ -169,10 +169,10 @@ public class JdbcDataBase {
      * 2020/5/28 22:12
      **/
     public <T> List<T> queryListObject(String sql, Class<T> requiredType, @Nullable Object... params) {
-       log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         List<T> t = handler.queryObjectList(sql, requiredType, params);
-       log.handleTimeLost(start);
+        log.handleTimeLost(start);
         return t;
     }
 
@@ -186,10 +186,10 @@ public class JdbcDataBase {
      * 2020/5/28 22:12
      **/
     public Map<String, Object> queryMap(String sql, @Nullable Object... params) {
-       log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         Map<String, Object> map = handler.queryMap(sql, params);
-       log.handleTimeLost(start);
+        log.handleTimeLost(start);
         return map;
     }
 
@@ -202,10 +202,10 @@ public class JdbcDataBase {
      * 2020/4/11 18:11
      **/
     public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
-       log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         List<Map<String, Object>> list = handler.queryListMap(sql, params);
-       log.handleTimeLost(start);
+        log.handleTimeLost(start);
         return list;
     }
 
@@ -219,10 +219,10 @@ public class JdbcDataBase {
      * @date 2022/7/25 10:41
      **/
     public JSONObject queryJsonObject(String sql, @Nullable Object... params) {
-       log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JSONObject object = handler.queryJsonObject(sql, params);
-       log.handleTimeLost(start);
+        log.handleTimeLost(start);
         return object;
     }
 
@@ -236,10 +236,10 @@ public class JdbcDataBase {
      * @date 2022/7/25 10:42
      **/
     public JSONArray queryJSONArray(String sql, @Nullable Object... params) {
-       log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JSONArray array = handler.queryJsonArray(sql, params);
-       log.handleTimeLost(start);
+        log.handleTimeLost(start);
         return array;
     }
 
@@ -264,7 +264,7 @@ public class JdbcDataBase {
         resMap.put("pageData", isResultString ? resultConvert(pageData) : pageData);
         resMap.put("page", page);
         resMap.put("rows", rows);
-       log.handleTimeLost(start);
+        log.handleTimeLost(start);
         return resMap;
     }
 
@@ -293,7 +293,7 @@ public class JdbcDataBase {
      * 2020/4/11 18:05
      **/
     public int executeDMLSql(String sql, @Nullable Object... params) {
-       log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         return handler.update(sql, params);
     }
 
@@ -496,7 +496,7 @@ public class JdbcDataBase {
      * @date 2020/5/15 0015 16:34
      **/
     public void executeDDLSql(String sql) {
-       log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl());
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl());
         try {
             handler.getStatement().execute(sql);
         } catch (SQLException e) {
