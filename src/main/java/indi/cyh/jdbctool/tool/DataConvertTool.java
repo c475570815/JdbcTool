@@ -237,6 +237,7 @@ public class DataConvertTool {
             case "[B":
                 return byteToBase64(res);
             case "javax.sql.rowset.serial.SerialClob":
+            case "com.alibaba.druid.proxy.jdbc.ClobProxyImpl":
                 try {
                     return StringTool.clobToString((Clob) res);
                 } catch (Exception e) {

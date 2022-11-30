@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 
+          http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <localRepository>F:/Maven/repository</localRepository>
+    <mirrors>
+        <mirror>
+            <id>default</id>
+            <name>aliyun maven</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+            <mirrorOf>*,!antu</mirrorOf>
+        </mirror>
+
+        <mirror>
+            <id>maven-releases</id>
+            <name>maven-releases</name>
+            <url>http://gzbdc.in.3322.org:40040/repository/maven-releases/</url>
+            <mirrorOf>cd</mirrorOf>
+        </mirror>
+
+        <mirror>
+            <id>maven-snapshots</id>
+            <name>maven-snapshots</name>
+            <url>http://gzbdc.in.3322.org:40040/repository/maven-snapshots/</url>
+            <mirrorOf>cd</mirrorOf>
+        </mirror>
+
+    </mirrors>
+    <servers>
+        <server>
+            <id>maven-releases</id>
+            <username>admin</username>
+            <password>Antu123321</password>
+        </server>
+        <server>
+            <id>maven-snapshots</id>
+            <username>admin</username>
+            <password>Antu123321</password>
+        </server>
+    </servers>
+</settings>
