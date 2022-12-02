@@ -119,7 +119,7 @@ public class JdbcDataBase {
         log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         T t = handler.querySingleTypeResult(sql, requiredType, params);
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
         return t;
     }
 
@@ -136,7 +136,7 @@ public class JdbcDataBase {
         log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         List<T> t = handler.queryListSingleType(sql, requiredType, params);
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
         return t;
     }
 
@@ -154,7 +154,7 @@ public class JdbcDataBase {
         log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         T t = handler.queryObject(sql, requiredType, params);
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
         return t;
     }
 
@@ -172,7 +172,7 @@ public class JdbcDataBase {
         log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         List<T> t = handler.queryObjectList(sql, requiredType, params);
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
         return t;
     }
 
@@ -189,7 +189,7 @@ public class JdbcDataBase {
         log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         Map<String, Object> map = handler.queryMap(sql, params);
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
         return map;
     }
 
@@ -205,7 +205,7 @@ public class JdbcDataBase {
         log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         List<Map<String, Object>> list = handler.queryListMap(sql, params);
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
         return list;
     }
 
@@ -222,7 +222,7 @@ public class JdbcDataBase {
         log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JSONObject object = handler.queryJsonObject(sql, params);
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
         return object;
     }
 
@@ -239,7 +239,7 @@ public class JdbcDataBase {
         log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         JSONArray array = handler.queryJsonArray(sql, params);
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
         return array;
     }
 
@@ -264,7 +264,7 @@ public class JdbcDataBase {
         resMap.put("pageData", isResultString ? resultConvert(pageData) : pageData);
         resMap.put("page", page);
         resMap.put("rows", rows);
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
         return resMap;
     }
 

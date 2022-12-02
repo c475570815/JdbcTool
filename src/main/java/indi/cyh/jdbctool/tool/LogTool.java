@@ -6,6 +6,7 @@ import indi.cyh.jdbctool.core.JdbcDataBase;
 import indi.cyh.jdbctool.modle.DbInfo;
 import indi.cyh.jdbctool.modle.log.ConsoleLogConfig;
 import indi.cyh.jdbctool.modle.log.FileLogConfig;
+import indi.cyh.jdbctool.modle.log.TimeoutConfig;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -46,15 +47,10 @@ public class LogTool {
             log = String.format("Jdbctool-%s:%s%n", timeFormat.format(now), log);
         }
         if (ConsoleLogConfig.isEnable()) {
-            System.out.printf(log);
+            System.out.print(log);
         }
         if (FileLogConfig.isEnable()) {
-            String path = String.format("%s%s%s-%tF.log",
-                    FileLogConfig.getToolLogPath(),
-                    File.separator,
-                    FileLogConfig.TOOL_LOG_NAME,
-                    now);
-            FileUtils.fileLinesWrite(path, log, true);
+            writeFileLog(log, now);
         }
     }
 
@@ -76,12 +72,7 @@ public class LogTool {
         }
         System.out.println(log);
         if (FileLogConfig.isEnable()) {
-            String path = String.format("%s%s%s-%tF.log",
-                    FileLogConfig.getExceptionLogPath(),
-                    File.separator,
-                    FileLogConfig.TOOL_LOG_NAME,
-                    now);
-            FileUtils.fileLinesWrite(path, log, true);
+            writeFileLog(log, now);
         }
         if (isPrintStackTrace) {
             e.printStackTrace();
@@ -151,25 +142,28 @@ public class LogTool {
      * @author CYH
      * @date 2021/9/17 16:41
      **/
-    private String getTimeLostLogStr(long start) {
-        long l = System.currentTimeMillis() - start;
+    private String getTimeLostLogStr(long start, String jdbcUrl, String sql, @Nullable Object... params) {
+        long lostTime = System.currentTimeMillis() - start;
         StringBuilder builder = new StringBuilder();
         long millis = 1;
         long seconds = 1000 * millis;
         long minutes = 60 * seconds;
         long hours = 60 * minutes;
         long days = 24 * hours;
-        if (l / days >= 1)
-            builder.append((int) (l / days)).append("天");
-        if (l % days / hours >= 1)
-            builder.append((int) (l % days / hours)).append("小时");
-        if (l % days % hours / minutes >= 1)
-            builder.append((int) (l % days % hours / minutes)).append("分钟");
-        if (l % days % hours % minutes / seconds >= 1)
-            builder.append((int) (l % days % hours % minutes / seconds)).append("秒");
-        long ms = l % days % hours % minutes % seconds / millis;
+        if (lostTime / days >= 1)
+            builder.append((int) (lostTime / days)).append("天");
+        if (lostTime % days / hours >= 1)
+            builder.append((int) (lostTime % days / hours)).append("小时");
+        if (lostTime % days % hours / minutes >= 1)
+            builder.append((int) (lostTime % days % hours / minutes)).append("分钟");
+        if (lostTime % days % hours % minutes / seconds >= 1)
+            builder.append((int) (lostTime % days % hours % minutes / seconds)).append("秒");
+        long ms = lostTime % days % hours % minutes % seconds / millis;
         if (ms >= 1)
             builder.append((int) (ms)).append("毫秒");
+        if (lostTime >= TimeoutConfig.getMaxLostTime()) {
+            writeTimeoutConfigFileLog(sql, jdbcUrl, params, lostTime);
+        }
         return String.format("执行耗时:%s\n", builder);
     }
 
@@ -182,9 +176,9 @@ public class LogTool {
      * @author CYH
      * @date 2020/7/14 0014 16:46
      **/
-    public void handleTimeLost(long start) {
+    public void handleTimeLost(long start, String jdbcUrl, String sql, @Nullable Object... params) {
         if (ConsoleLogConfig.isEnable() || FileLogConfig.isEnable()) {
-            String timeLostLog = getTimeLostLogStr(start);
+            String timeLostLog = getTimeLostLogStr(start, jdbcUrl, sql, params);
             handleLogCommon(timeLostLog, true);
         }
     }
@@ -261,5 +255,28 @@ public class LogTool {
                 e.printStackTrace();
             }
         }
+    }
+    private static void writeFileLog(String log, Date now) {
+        String path = String.format("%s%s%s-%tF.log",
+                FileLogConfig.getExceptionLogPath(),
+                File.separator,
+                FileLogConfig.TOOL_LOG_NAME,
+                now);
+        FileUtils.fileLinesWrite(path, log, true);
+    }
+
+    private void writeTimeoutConfigFileLog(String sql, String jdbcUrl, Object[] params, long lostTime) {
+        String path = String.format("%s%s%s-%tF.log",
+                TimeoutConfig.getFilePath(),
+                File.separator,
+                TimeoutConfig.getFileName(),
+                new Date());
+        FileUtils.fileLinesWrite(path,
+                String.format("jdbcUrl:%s  \n %s \n 执行耗时:%s毫秒\n\n\n\n\n\n",
+                        jdbcUrl,
+                        getSqlLog(sql, jdbcUrl, params),
+                        lostTime)
+                , true);
+        System.out.println("sql执行超时已记录...");
     }
 }
