@@ -3,10 +3,11 @@ package indi.cyh.jdbctool.tool;
 import indi.cyh.jdbctool.config.ConfigCenter;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @Description TODO * @Author CYH * @Date 2021/9/17 16:24
@@ -19,15 +20,29 @@ public class FileUtils {
      */
     public static String getConTextPath() {
         String fileUrl = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource(ConfigCenter.configFileName)).getPath();
-        if ("usr".equals(fileUrl.substring(1, 4))) {
-            //linux
-            fileUrl = (fileUrl.substring(0, fileUrl.length() - 16));
+        String jarName = getJarName(fileUrl);
+        if (StringTool.isEmpty(jarName)) {
+            return new File(fileUrl).getParentFile().getPath();
         } else {
-            //windows
-            fileUrl = (fileUrl.substring(1, fileUrl.length() - 16));
+            if (fileUrl.indexOf("file:") == 0) {
+                fileUrl = fileUrl.replaceFirst("file:", "");
+            }
+            return fileUrl.substring(0, fileUrl.indexOf(jarName));
         }
-        LogTool.handleLog("getConTextPath-end");
-        return fileUrl;
+    }
+
+    public static boolean isWidows() {
+        return System.getProperties().getProperty("os.name").toLowerCase().contains("windows");
+    }
+
+    public static String getJarName(String fileFullPath) {
+        Matcher m = Pattern.compile("([^<>/\\\\\\|:\"\"\\*\\?]+\\.jar)").matcher(fileFullPath);
+        if (m.find()) {
+            return m.group(1);
+        } else {
+            return "";
+        }
+
     }
 
     /**

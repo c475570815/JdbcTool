@@ -148,7 +148,7 @@ public class JdbcDataBase {
         } catch (Exception e) {
             LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
         }
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,dataSource.getRawJdbcUrl(),sql,params);
         return t;
     }
 
@@ -165,7 +165,7 @@ public class JdbcDataBase {
         log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
         long start = System.currentTimeMillis();
         List<T> t = getJdbcTemplate().query(sql, params, (resultSet, i) -> (T) resultSet.getObject(1));
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,dataSource.getRawJdbcUrl(),sql,params);
         return t;
     }
 
@@ -191,7 +191,7 @@ public class JdbcDataBase {
         } catch (Exception e) {
             LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
         }
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,dataSource.getRawJdbcUrl(),sql,params);
         return t;
     }
 
@@ -217,7 +217,7 @@ public class JdbcDataBase {
         } catch (Exception e) {
             LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
         }
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,dataSource.getRawJdbcUrl(),sql,params);
         return t;
     }
 
@@ -242,7 +242,7 @@ public class JdbcDataBase {
         } catch (Exception e) {
             LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
         }
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,dataSource.getRawJdbcUrl(),sql,params);
         return map;
     }
 
@@ -266,7 +266,7 @@ public class JdbcDataBase {
         } catch (Exception e) {
             LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
         }
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,dataSource.getRawJdbcUrl(),sql,params);
         return list;
     }
 
@@ -290,7 +290,7 @@ public class JdbcDataBase {
         resMap.put("pageData", isResultString ? resultConvert(pageData) : pageData);
         resMap.put("page", page);
         resMap.put("rows", rows);
-        log.handleTimeLost(start);
+        log.handleTimeLost(start,dataSource.getRawJdbcUrl(),sql,params);
         return resMap;
     }
 
@@ -375,7 +375,7 @@ public class JdbcDataBase {
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         //语句拼接
         StringBuilder insertSqlBuilder = new StringBuilder("INSERT INTO ");
-        insertSqlBuilder.append(EntityTool.getTabelName(requiredType));
+        insertSqlBuilder.append(EntityTool.getTableName(requiredType));
         insertSqlBuilder.append("(");
         List<String> columnNameList = new ArrayList<>();
         List<String> placeholderList = new ArrayList<>();
@@ -429,7 +429,7 @@ public class JdbcDataBase {
      **/
     public <T> void deleteById(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "DELETE FROM " + tableName + "  where  " +
                 primaryField + "=?";
         executeDMLSql(sql, id);
@@ -450,7 +450,7 @@ public class JdbcDataBase {
             isList.add(id.toString());
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "DELETE FROM " + tableName + "  where  " +
                 primaryField + " in (" + StringTool.getSqlValueStr(isList) + ")";
         executeDMLSql(sql);
@@ -467,7 +467,7 @@ public class JdbcDataBase {
      **/
     public <T> T queryOneRowById(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "select * FROM " + tableName + "  where  " +
                 primaryField + "=?";
         return queryOneRow(sql, requiredType, id);
@@ -488,7 +488,7 @@ public class JdbcDataBase {
             isList.add(id.toString());
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "select * FROM " + tableName + "  where  " +
                 primaryField + " in  (" + StringTool.getSqlValueStr(isList) + ")";
         return queryList(sql, requiredType);
@@ -505,7 +505,7 @@ public class JdbcDataBase {
      **/
     public <T> void updateById(Class<T> requiredType, T entity) throws NoSuchFieldException, IllegalAccessException {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         Object primaryFieldValue = null;
         List<Object> valueList = new ArrayList<>();

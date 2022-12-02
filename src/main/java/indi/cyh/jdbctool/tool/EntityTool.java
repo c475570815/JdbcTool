@@ -4,11 +4,7 @@ import indi.cyh.jdbctool.annotation.FieldColumn;
 import indi.cyh.jdbctool.annotation.PrimaryKey;
 import indi.cyh.jdbctool.annotation.TableName;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.sql.Clob;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.*;
 
 /**
@@ -26,7 +22,7 @@ public class EntityTool {
      * @author CYH
      * @date 2020/5/27 0027 10:46
      **/
-    public static <T> String getTabelName(Class<T> type) {
+    public static <T> String getTableName(Class<T> type) {
         try {
             return type.getAnnotation(TableName.class).value();
         } catch (Exception e) {

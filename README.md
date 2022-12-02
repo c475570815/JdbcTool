@@ -67,6 +67,21 @@
     "initialSize": 2,
     "maxActive": 100,
     "keepAlive": true
+  },
+  "logConfig": {
+    "file": {
+      "enable": false,
+      "exceptionLogPath": "",
+      "toolLogPath": ""
+    },
+    "console": {
+      "enable": true
+    },
+    "timeout": {
+      "enable": false,
+      "maxLostTime": "20000",
+      "fileName": "test-log"
+    }
   }
 }
 
