@@ -1,25 +1,20 @@
 package indi.cyh.jdbctool.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
-import indi.cyh.jdbctool.modle.DBType;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.sun.istack.internal.Nullable;
 import indi.cyh.jdbctool.modle.*;
 import indi.cyh.jdbctool.tool.DataConvertTool;
 import indi.cyh.jdbctool.tool.EntityTool;
 import indi.cyh.jdbctool.tool.LogTool;
 import indi.cyh.jdbctool.tool.StringTool;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.lang.Nullable;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
-import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.regex.Matcher;
 
 /**
  * @ClassName JdbcDateBase
@@ -29,51 +24,11 @@ import java.util.*;
  */
 public class JdbcDataBase {
 
-    ////事务相关
-    private static final TransactionDefinition definition;
-    private final DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
-    private final LinkedHashMap<String, TransactionStatus> transcationMap = new LinkedHashMap<>();
-
-    static {
-        //事务参数赋默认值
-        definition = new TransactionDefinition() {
-            @Override
-            public int getPropagationBehavior() {
-                return TransactionDefinition.PROPAGATION_REQUIRED;
-            }
-
-            @Override
-            public int getIsolationLevel() {
-                return TransactionDefinition.ISOLATION_DEFAULT;
-            }
-
-            @Override
-            public int getTimeout() {
-                return TIMEOUT_DEFAULT;
-            }
-
-            @Override
-            public boolean isReadOnly() {
-                return false;
-            }
-
-            @Override
-            public String getName() {
-                return "JDBC-TOOL";
-            }
-        };
-
-    }
 
     /**
-     * 当前对象使用的数据池
+     * jdbc处理工具
      */
-    DruidDataSource dataSource;
-
-    DBType dbType;
-    /**
-     * 从配置文件中获取是否为调试模式
-     */
+    JdbcHandler handler;
     /**
      * 日志工具
      *
@@ -83,13 +38,13 @@ public class JdbcDataBase {
      * 2020/7/16 21:16
      **/
     private final LogTool log = new LogTool();
-
+    DBType dbType;
 
     @Override
     public int hashCode() {
-        String conn = dataSource.getUrl();
-        String loginName = dataSource.getUsername();
-        String pwd = dataSource.getPassword();
+        String conn = handler.getDataSource().getUrl();
+        String loginName = handler.getDataSource().getUsername();
+        String pwd = handler.getDataSource().getPassword();
         return 17 * conn.hashCode() * loginName.hashCode() * pwd.hashCode();
     }
 
@@ -103,210 +58,12 @@ public class JdbcDataBase {
         if (this == db) {
             return true;
         }
-        return db.dataSource.getUrl().equals(this.dataSource.getUrl());
+        return db.handler.getDataSource().getUrl().equals(this.handler.getDataSource().getUrl());
     }
 
     public JdbcDataBase(DruidDataSource dataSource) {
-        this.dataSource = dataSource;
         dbType = DBType.getDbTypeByDriverClassName(dataSource.getDriverClassName());
-        transactionManager.setDataSource(dataSource);
-    }
-
-    /**
-     * 根据当前对象数据源 生成 JdbcTemplate
-     *
-     * @return org.springframework.jdbc.core.JdbcTemplate
-     * @author cyh
-     * 2020/5/28 21:59
-     **/
-    public JdbcTemplate getJdbcTemplate() {
-        JdbcTemplate template = new JdbcTemplate();
-        setQueryTimeOut(template);
-        template.setDataSource(this.dataSource);
-        return template;
-    }
-
-    /**
-     * 查询单一简单类型结果
-     *
-     * @param sql
-     * @param requiredType
-     * @param params
-     * @return T
-     * @author CYH
-     * @date 2020/5/29 0029 16:44
-     **/
-    public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
-        long start = System.currentTimeMillis();
-        JdbcTemplate template = getJdbcTemplate();
-        T t = null;
-        try {
-            t = template.queryForObject(sql, requiredType, params);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        } catch (Exception e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
-        }
-        log.handleTimeLost(start);
-        return t;
-    }
-
-    /**
-     * 查询简单类型集合结果
-     *
-     * @param sql
-     * @param params
-     * @return java.util.List<T>
-     * @author CYH
-     * @date 2020/7/10 0010 17:05
-     **/
-    public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
-        long start = System.currentTimeMillis();
-        List<T> t = getJdbcTemplate().query(sql, params, (resultSet, i) -> (T) resultSet.getObject(1));
-        log.handleTimeLost(start);
-        return t;
-    }
-
-    /**
-     * 查询一个实体类
-     *
-     * @param sql          sql
-     * @param requiredType 返回类型
-     * @param params       参数
-     * @return T           目标实体
-     * @author cyh
-     * 2020/4/11 15:41
-     **/
-    public <T> T queryOneRow(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
-        long start = System.currentTimeMillis();
-        JdbcTemplate template = getJdbcTemplate();
-        T t = null;
-        try {
-            t = template.queryForObject(sql, new JdbcRowMapper<>(requiredType), params);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        } catch (Exception e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
-        }
-        log.handleTimeLost(start);
-        return t;
-    }
-
-    /**
-     * 查询实体类集合
-     *
-     * @param sql
-     * @param requiredType
-     * @param params
-     * @return java.util.List<T>
-     * @author cyh
-     * 2020/5/28 22:12
-     **/
-    public <T> List<T> queryList(String sql, Class<T> requiredType, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
-        long start = System.currentTimeMillis();
-        JdbcTemplate template = getJdbcTemplate();
-        List<T> t = new ArrayList<>();
-        try {
-            t = template.query(sql, new JdbcRowMapper<>(requiredType), params);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        } catch (Exception e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
-        }
-        log.handleTimeLost(start);
-        return t;
-    }
-
-    /**
-     * 查询一行 map
-     *
-     * @param sql
-     * @param params
-     * @return java.util.Map
-     * @author cyh
-     * 2020/5/28 22:12
-     **/
-    public Map<String, Object> queryForMap(String sql, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
-        long start = System.currentTimeMillis();
-        JdbcTemplate template = getJdbcTemplate();
-        Map<String, Object> map = null;
-        try {
-            map = template.queryForMap(sql, params);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        } catch (Exception e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
-        }
-        log.handleTimeLost(start);
-        return map;
-    }
-
-    /**
-     * 查询获取list<Map>
-     *
-     * @param sql sql
-     * @return java.util.List<java.util.Map < java.lang.String, java.lang.Object>>
-     * @author cyh
-     * 2020/4/11 18:11
-     **/
-    public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
-        long start = System.currentTimeMillis();
-        JdbcTemplate template = getJdbcTemplate();
-        List<Map<String, Object>> list = new ArrayList<>();
-        try {
-            list = template.queryForList(sql, params);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        } catch (Exception e) {
-            LogTool.handleExceptionLogByDbInfo(this, "查询为空或者异常", true, e);
-        }
-        log.handleTimeLost(start);
-        return list;
-    }
-
-    /**
-     * 查询分页数据
-     *
-     * @param sql            原始sql
-     * @param page           页数
-     * @param rows           每页行数
-     * @param isResultString 是否把结果都转换为String
-     * @return Map<String, Object>
-     * @author CYH
-     * @date 2020/4/28 0028 16:03
-     **/
-    public Map<String, Object> queryPageData(String sql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
-        Map<String, Object> resMap = new HashMap<>();
-        long start = System.currentTimeMillis();
-        PageQueryInfo queryInfo = getPageQueryInfo(page, rows, sql);
-        resMap.put("total", querySingleTypeResult(queryInfo.getCountSql(), int.class, params));
-        List<Map<String, Object>> pageData = queryListMap(queryInfo.getPageSql(), params);
-        resMap.put("pageData", isResultString ? resultConvert(pageData) : pageData);
-        resMap.put("page", page);
-        resMap.put("rows", rows);
-        log.handleTimeLost(start);
-        return resMap;
-    }
-
-    /**
-     * 制作分页实体
-     *
-     * @param sql
-     * @return java.lang.Object
-     * @author CYH
-     * @date 2020/4/28 0028 16:12
-     **/
-    private PageQueryInfo getPageQueryInfo(Integer page, Integer rows, String sql) throws Exception {
-        PageQueryInfo queryInfo = new PageQueryInfo();
-        queryInfo.setPageSql(SqlHandler.getPageSql(page, rows, sql, dbType));
-        queryInfo.setCountSql(SqlHandler.getSelectCountSql(sql, dbType));
-        return queryInfo;
+        this.handler = new JdbcHandler(dataSource);
     }
 
 
@@ -349,6 +106,184 @@ public class JdbcDataBase {
     }
 
     /**
+     * 查询单一简单类型结果
+     *
+     * @param sql
+     * @param requiredType
+     * @param params
+     * @return T
+     * @author CYH
+     * @date 2020/5/29 0029 16:44
+     **/
+    public <T> T querySingleTypeResult(String sql, Class<T> requiredType, @Nullable Object... params) {
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        long start = System.currentTimeMillis();
+        T t = handler.querySingleTypeResult(sql, requiredType, params);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
+        return t;
+    }
+
+    /**
+     * 查询简单类型集合结果
+     *
+     * @param sql
+     * @param params
+     * @return java.util.List<T>
+     * @author CYH
+     * @date 2020/7/10 0010 17:05
+     **/
+    public <T> List<T> querySingleTypeList(String sql, Class<T> requiredType, @Nullable Object... params) {
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        long start = System.currentTimeMillis();
+        List<T> t = handler.queryListSingleType(sql, requiredType, params);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
+        return t;
+    }
+
+    /**
+     * 查询一个实体类
+     *
+     * @param sql          sql
+     * @param requiredType 返回类型
+     * @param params       参数
+     * @return T           目标实体
+     * @author cyh
+     * 2020/4/11 15:41
+     **/
+    public <T> T queryObject(String sql, Class<T> requiredType, @Nullable Object... params) {
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        long start = System.currentTimeMillis();
+        T t = handler.queryObject(sql, requiredType, params);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
+        return t;
+    }
+
+    /**
+     * 查询实体类集合
+     *
+     * @param sql
+     * @param requiredType
+     * @param params
+     * @return java.util.List<T>
+     * @author cyh
+     * 2020/5/28 22:12
+     **/
+    public <T> List<T> queryListObject(String sql, Class<T> requiredType, @Nullable Object... params) {
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        long start = System.currentTimeMillis();
+        List<T> t = handler.queryObjectList(sql, requiredType, params);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
+        return t;
+    }
+
+    /**
+     * 查询一行 map
+     *
+     * @param sql
+     * @param params
+     * @return java.util.Map
+     * @author cyh
+     * 2020/5/28 22:12
+     **/
+    public Map<String, Object> queryMap(String sql, @Nullable Object... params) {
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        long start = System.currentTimeMillis();
+        Map<String, Object> map = handler.queryMap(sql, params);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
+        return map;
+    }
+
+    /**
+     * 查询获取list<Map>
+     *
+     * @param sql sql
+     * @return java.util.List<java.util.Map < java.lang.String, java.lang.Object>>
+     * @author cyh
+     * 2020/4/11 18:11
+     **/
+    public List<Map<String, Object>> queryListMap(String sql, @Nullable Object... params) {
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        long start = System.currentTimeMillis();
+        List<Map<String, Object>> list = handler.queryListMap(sql, params);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
+        return list;
+    }
+
+    /**
+     * 查询jsonObject
+     *
+     * @param sql
+     * @param params
+     * @return com.alibaba.fastjson.JSONObject
+     * @author CYH
+     * @date 2022/7/25 10:41
+     **/
+    public JSONObject queryJsonObject(String sql, @Nullable Object... params) {
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        long start = System.currentTimeMillis();
+        JSONObject object = handler.queryJsonObject(sql, params);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
+        return object;
+    }
+
+    /**
+     * 查询JSONArray
+     *
+     * @param sql
+     * @param params
+     * @return com.alibaba.fastjson.JSONArray
+     * @author CYH
+     * @date 2022/7/25 10:42
+     **/
+    public JSONArray queryJSONArray(String sql, @Nullable Object... params) {
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        long start = System.currentTimeMillis();
+        JSONArray array = handler.queryJsonArray(sql, params);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
+        return array;
+    }
+
+
+    /**
+     * 查询分页数据
+     *
+     * @param sql            原始sql
+     * @param page           页数
+     * @param rows           每页行数
+     * @param isResultString 是否把结果都转换为String
+     * @return Map<String, Object>
+     * @author CYH
+     * @date 2020/4/28 0028 16:03
+     **/
+    public Map<String, Object> queryPageData(String sql, Integer page, Integer rows, boolean isResultString, @Nullable Object... params) throws Exception {
+        Map<String, Object> resMap = new HashMap<>();
+        long start = System.currentTimeMillis();
+        PageQueryInfo queryInfo = getPageQueryInfo(page, rows, sql);
+        resMap.put("total", querySingleTypeResult(queryInfo.getCountSql(), int.class, params));
+        List<Map<String, Object>> pageData = queryListMap(queryInfo.getPageSql(), params);
+        resMap.put("pageData", isResultString ? resultConvert(pageData) : pageData);
+        resMap.put("page", page);
+        resMap.put("rows", rows);
+        log.handleTimeLost(start,handler.getDataSource().getRawJdbcUrl(),sql,params);
+        return resMap;
+    }
+
+    /**
+     * 制作分页实体
+     *
+     * @param sql
+     * @return java.lang.Object
+     * @author CYH
+     * @date 2020/4/28 0028 16:12
+     **/
+    private PageQueryInfo getPageQueryInfo(Integer page, Integer rows, String sql) throws Exception {
+        PageQueryInfo queryInfo = new PageQueryInfo();
+        queryInfo.setPageSql(SqlHandler.getPageSql(page, rows, sql, dbType));
+        queryInfo.setCountSql(SqlHandler.getSelectCountSql(sql, dbType));
+        return queryInfo;
+    }
+
+    /**
      * 用于执行 DML 语句(INSERT、UPDATE、DELETE)
      *
      * @param sql    sql
@@ -358,9 +293,8 @@ public class JdbcDataBase {
      * 2020/4/11 18:05
      **/
     public int executeDMLSql(String sql, @Nullable Object... params) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
-        JdbcTemplate template = getJdbcTemplate();
-        return template.update(sql, params);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl(), params);
+        return handler.update(sql, params);
     }
 
     /**
@@ -371,11 +305,11 @@ public class JdbcDataBase {
      * @author CYH
      * @date 2020/5/29 0029 15:44
      **/
-    public <T> Object insert(Class<T> requiredType, T t, boolean returnIntPrimary) throws NoSuchFieldException, IllegalAccessException {
+    public <T> Object insert(Class<T> requiredType, T t, boolean returnIntPrimary) throws NoSuchFieldException, IllegalAccessException, SQLException {
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         //语句拼接
         StringBuilder insertSqlBuilder = new StringBuilder("INSERT INTO ");
-        insertSqlBuilder.append(EntityTool.getTabelName(requiredType));
+        insertSqlBuilder.append(EntityTool.getTableName(requiredType));
         insertSqlBuilder.append("(");
         List<String> columnNameList = new ArrayList<>();
         List<String> placeholderList = new ArrayList<>();
@@ -399,19 +333,7 @@ public class JdbcDataBase {
         String sql = insertSqlBuilder.toString();
         Object[] params = valueList.toArray();
         if (returnIntPrimary) {
-            //返回主键预处理
-            JdbcTemplate template = getJdbcTemplate();
-            KeyHolder keyHolder = new GeneratedKeyHolder();
-            template.update(conn -> {
-                // 预处理 注意参数 PreparedStatement.RETURN_GENERATED_KEYS
-                PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
-                for (int i = 0; i < params.length; i++) {
-                    ps.setObject((i + 1), params[i]);
-                }
-                return ps;
-            }, keyHolder);
-            log.handleSqlLog(sql, dataSource.getRawJdbcUrl(), params);
-            return Objects.requireNonNull(keyHolder.getKey()).intValue();
+            return handler.updateReturnIntPrimary(sql, params);
         } else {
             executeDMLSql(sql, params);
             return null;
@@ -429,7 +351,7 @@ public class JdbcDataBase {
      **/
     public <T> void deleteById(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "DELETE FROM " + tableName + "  where  " +
                 primaryField + "=?";
         executeDMLSql(sql, id);
@@ -450,7 +372,7 @@ public class JdbcDataBase {
             isList.add(id.toString());
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "DELETE FROM " + tableName + "  where  " +
                 primaryField + " in (" + StringTool.getSqlValueStr(isList) + ")";
         executeDMLSql(sql);
@@ -465,12 +387,12 @@ public class JdbcDataBase {
      * @author CYH
      * @date 2020/5/29 0029 17:28
      **/
-    public <T> T queryOneRowById(Class<T> requiredType, Object id) {
+    public <T> T findRowById(Class<T> requiredType, Object id) {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "select * FROM " + tableName + "  where  " +
                 primaryField + "=?";
-        return queryOneRow(sql, requiredType, id);
+        return queryObject(sql, requiredType, id);
     }
 
     /**
@@ -488,10 +410,10 @@ public class JdbcDataBase {
             isList.add(id.toString());
         }
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         String sql = "select * FROM " + tableName + "  where  " +
                 primaryField + " in  (" + StringTool.getSqlValueStr(isList) + ")";
-        return queryList(sql, requiredType);
+        return queryListObject(sql, requiredType);
     }
 
     /**
@@ -505,7 +427,7 @@ public class JdbcDataBase {
      **/
     public <T> void updateById(Class<T> requiredType, T entity) throws NoSuchFieldException, IllegalAccessException {
         String primaryField = EntityTool.getEntityPrimaryField(requiredType);
-        String tableName = EntityTool.getTabelName(requiredType);
+        String tableName = EntityTool.getTableName(requiredType);
         Map<String, String> fieldColumnMap = EntityTool.getEntityFieldColumnMap(requiredType);
         Object primaryFieldValue = null;
         List<Object> valueList = new ArrayList<>();
@@ -539,62 +461,30 @@ public class JdbcDataBase {
      * @author cyh
      * 2020/7/4 9:41
      **/
-    public String beginTransaction() throws Exception {
-        try {
-            TransactionStatus transactionStatus = transactionManager.getTransaction(definition);
-            String transactionId = UUID.randomUUID().toString();
-            transcationMap.put(transactionId, transactionStatus);
-            LogTool.handleLog("开启事务:%s", transactionId);
-            return transactionId;
-        } catch (Exception e) {
-            LogTool.handleExceptionLog("事务开启异常:%s", true, e, e.getMessage());
-            throw new Exception("事务开启异常:" + e.getMessage());
-        }
+    public void beginTransaction() throws Exception {
+        handler.beginTransaction();
     }
 
     /**
      * 提交一个事务
      *
-     * @param transactionId 事务id
      * @return void
      * @author cyh
      * 2020/7/4 9:42
      **/
-    public void commitTransaction(String transactionId) {
-        if (transcationMap.containsKey(transactionId)) {
-            try {
-                transactionManager.commit(transcationMap.get(transactionId));
-                transcationMap.remove(transactionId);
-                LogTool.handleLog("事务已提交:%s", transactionId);
-            } catch (Exception e) {
-                e.printStackTrace();
-                LogTool.handleExceptionLog("事务提交异常%s", true, e, transactionId);
-            }
-        } else {
-            System.out.println("事务提交异常--错误的transactionId:" + transactionId);
-        }
-
+    public void commitTransaction() {
+        handler.commitTransaction();
     }
 
     /**
      * 回滚一个事务
      *
-     * @param transactionId 事务id
      * @return void
      * @author cyh
      * 2020/7/4 9:42
      **/
-    public void rollbackTransaction(String transactionId) {
-        if (transcationMap.containsKey(transactionId)) {
-            try {
-                transactionManager.rollback(transcationMap.get(transactionId));
-                transcationMap.remove(transactionId);
-            } catch (Exception e) {
-                LogTool.handleExceptionLog("事务回归异常%s", true, e, transactionId);
-            }
-        } else {
-            System.out.println("事务回归异常--错误的transactionId:" + transactionId);
-        }
+    public void rollbackTransaction() {
+        handler.rollbackTransaction();
     }
 
     /**
@@ -606,9 +496,12 @@ public class JdbcDataBase {
      * @date 2020/5/15 0015 16:34
      **/
     public void executeDDLSql(String sql) {
-        log.handleSqlLog(sql, dataSource.getRawJdbcUrl());
-        JdbcTemplate template = getJdbcTemplate();
-        template.execute(sql);
+        log.handleSqlLog(sql, handler.getDataSource().getRawJdbcUrl());
+        try {
+            handler.getStatement().execute(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -620,21 +513,6 @@ public class JdbcDataBase {
      * 2020/12/9 22:41
      **/
     public DataSource getDataSource() {
-        return this.dataSource;
-    }
-
-    /**
-     * 查询 当前对象对应的db信息 配置查询超时时间
-     *
-     * @param template
-     * @return void
-     * @author CYH
-     * @date 2021/9/9 16:22
-     **/
-    private void setQueryTimeOut(JdbcTemplate template) {
-        DbInfo info = DataSourceFactory.getDbInfoByJdbcDataBase(this);
-        if (info.getQueryTimeOut() != -1) {
-            template.setQueryTimeout(info.getQueryTimeOut());
-        }
+        return this.handler.getDataSource();
     }
 }

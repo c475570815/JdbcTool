@@ -6,24 +6,15 @@
 
     <groupId>indi.cyh</groupId>
     <artifactId>JdbcTool</artifactId>
-    <version>1.0.0</version>
+    <version>2.0.0</version>
     <!--整体文件配置-->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
     </properties>
-
+    <description>JdbcTool is a dbTool for java</description>
     <dependencies>
-
-        <!--spring-jdbc-->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jdbc</artifactId>
-            <version>5.3.1</version>
-        </dependency>
-
-
         <!--sqlserver driver-->
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
@@ -51,7 +42,6 @@
         </dependency>
 
 
-
         <!-- postgresql driver -->
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -64,7 +54,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
-            <version>1.2.4</version>
+            <version>1.2.11</version>
         </dependency>
 
         <!--json解析-->
@@ -88,6 +78,11 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <encoding>UTF-8</encoding>
+                    <compilerArguments>
+                        <bootclasspath>
+                            ${java.home}\lib\rt.jar;${java.home}\lib\jce.jar
+                        </bootclasspath>
+                    </compilerArguments>
                 </configuration>
             </plugin>
             <plugin>

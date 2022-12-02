@@ -3,12 +3,12 @@
   "dataBaseConfig": [
     {
       "sourceName": "mainDb",
-      "type": "oracle",
-      "ip": "*",
-      "port": 1521,
-      "loginName": "*",
-      "pwd": "*",
-      "endParam": "*",
+      "type": "mysql",
+      "ip": "127.0.0.1",
+      "port": 3306,
+      "loginName": "root",
+      "pwd": "1",
+      "endParam": "localTest?useUnicode=true&useSSL=false&characterEncoding=UTF-8&serverTimezone=UTC",
       "queryTimeOut": 1
     },
   ],
@@ -17,7 +17,7 @@
       "type": "mysql",
       "driverClassName": "com.mysql.cj.jdbc.Driver",
       "port": 3306,
-      "jdbcTemplate": "jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}"
+      "jdbcTemplate": "jdbc:mysql://{{IP}}:{{PORT}}/{{END_PARAM}}",
     },
     {
       "type": "oracle",
@@ -41,6 +41,7 @@
   "druidConfig": {
     "initialSize": 2,
     "maxActive": 100,
-    "keepAlive": true
+    "keepAlive": true,
+    "MinEvictableIdleTimeMillis": 180000
   }
 }

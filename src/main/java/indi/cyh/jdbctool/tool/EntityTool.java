@@ -4,11 +4,9 @@ import indi.cyh.jdbctool.annotation.FieldColumn;
 import indi.cyh.jdbctool.annotation.PrimaryKey;
 import indi.cyh.jdbctool.annotation.TableName;
 
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Field;
-import java.sql.Clob;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.*;
 
 /**
@@ -26,7 +24,7 @@ public class EntityTool {
      * @author CYH
      * @date 2020/5/27 0027 10:46
      **/
-    public static <T> String getTabelName(Class<T> type) {
+    public static <T> String getTableName(Class<T> type) {
         try {
             return type.getAnnotation(TableName.class).value();
         } catch (Exception e) {
@@ -133,6 +131,62 @@ public class EntityTool {
         }).findFirst().orElse(null);
     }
 
+    /**
+     * 设置主键值
+     *
+     * @param entityType
+     * @param t
+     * @param value
+     * @return void
+     * @author CYH
+     * @date 2022/7/1 13:48
+     **/
+    public <T> void setPrimaryFeldValue(Class<? super T> entityType, T t, String value) throws NoSuchFieldException, IllegalAccessException {
+        String primaryKeyName = getPrimaryFeldName(entityType);
+        Field field = entityType.getDeclaredField(primaryKeyName);
+        field.setAccessible(true);
+        field.set(t, value);
+    }
 
+    /**
+     * 设置对象属性值
+     *
+     * @param t
+     * @param columName
+     * @param value
+     * @return void
+     * @author CYH
+     * @date 2022/7/1 13:49
+     **/
+    public static <T> void setColumValue(T t, String columName, Object value) throws IllegalAccessException, NoSuchFieldException, SQLException, IOException {
+        Field field = t.getClass().getDeclaredField(columName);
+        field.setAccessible(true);
+        value = DataConvertTool.convertObject(field.getType(), value);
+        field.set(t, value);
+    }
 
+    /**
+     * 使用ObjectStream序列化实现深克隆
+     *
+     * @return Object obj
+     */
+    public <T extends Serializable> T deepClone(T t) throws CloneNotSupportedException {
+        // 保存对象为字节数组
+        try {
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            try (ObjectOutputStream out = new ObjectOutputStream(bout)) {
+                out.writeObject(t);
+            }
+
+            // 从字节数组中读取克隆对象
+            try (InputStream bin = new ByteArrayInputStream(bout.toByteArray())) {
+                ObjectInputStream in = new ObjectInputStream(bin);
+                return (T) (in.readObject());
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            CloneNotSupportedException cloneNotSupportedException = new CloneNotSupportedException();
+            e.initCause(cloneNotSupportedException);
+            throw cloneNotSupportedException;
+        }
+    }
 }

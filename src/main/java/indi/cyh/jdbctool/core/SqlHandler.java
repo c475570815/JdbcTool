@@ -1,9 +1,9 @@
 package indi.cyh.jdbctool.core;
 
 import indi.cyh.jdbctool.modle.DBType;
+import indi.cyh.jdbctool.modle.SqlRegular;
 
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @ClassName SqlMaker
@@ -12,25 +12,6 @@ import java.util.regex.Pattern;
  * @Date 2022/11/29 10:47
  */
 public class SqlHandler {
-
-    //sql 匹配相应参数
-    private static final Pattern selectPattern;
-    private static final Pattern fromPattern;
-    private static final Pattern PATTERN_BRACKET;
-    private static final Pattern PATTERN_SELECT;
-    private static final Pattern PATTERN_DISTINCT;
-    private static final Pattern rxOrderBy;
-
-    static {
-        //sql 匹配相应参数 赋值
-        selectPattern = Pattern.compile("\\s*(SELECT|EXECUTE|CALL)\\s", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        fromPattern = Pattern.compile("\\s*FROM\\s", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        PATTERN_BRACKET = Pattern.compile("(\\(|\\)|[^\\(\\)]*)");
-        PATTERN_SELECT = Pattern.compile("select([\\W\\w]*)from", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        PATTERN_DISTINCT = Pattern.compile("\\A\\s+DISTINCT\\s", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-        rxOrderBy = Pattern.compile("\\bORDER\\s+BY\\s+([\\W\\w]*)(ASC|DESC)+", Pattern.CASE_INSENSITIVE | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNICODE_CASE);
-    }
-
     /**
      * 获取select的列
      *
@@ -40,7 +21,7 @@ public class SqlHandler {
      * @date 2022/11/29 10:52
      **/
     public static String getSelectCols(String sql) {
-        Matcher matcherSelect = PATTERN_SELECT.matcher(sql);
+        Matcher matcherSelect = SqlRegular.PATTERN_SELECT.matcher(sql);
         if (!matcherSelect.find()) {
             throw new RuntimeException("未从sql种匹配到select from ");
         } else {
@@ -111,7 +92,7 @@ public class SqlHandler {
         }
         String sqlSelectCols = getSelectCols(sql);
         int firstSelectIndex = sql.toLowerCase().indexOf("select");
-        Matcher matcherDistinct = PATTERN_DISTINCT.matcher(sqlSelectCols);
+        Matcher matcherDistinct = SqlRegular.PATTERN_DISTINCT.matcher(sqlSelectCols);
         if (!matcherDistinct.find() && !"*".equalsIgnoreCase(sqlSelectCols.trim())) {
             res = sql.substring(firstSelectIndex + 6);
         } else {
@@ -128,7 +109,7 @@ public class SqlHandler {
     private static String getDefaultPageSql(Integer page, Integer rows, String sql) {
         String sqlSelectCols = getSelectCols(sql);
         long skip = (long) (page - 1) * rows;
-        Matcher matcherDistinct = PATTERN_DISTINCT.matcher(sqlSelectCols);
+        Matcher matcherDistinct = SqlRegular.PATTERN_DISTINCT.matcher(sqlSelectCols);
         int lastOrderIndex = sql.toLowerCase().lastIndexOf("order");
         String sqlOrderBy = null;
         if (lastOrderIndex > -1) {
