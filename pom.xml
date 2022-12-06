@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>indi.cyh</groupId>
-    <artifactId>JdbcTool</artifactId>
-    <version>2.0.0</version>
+    <artifactId>sail-jdbc</artifactId>
+    <version>1.0.0</version>
     <!--整体文件配置-->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

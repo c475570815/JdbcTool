@@ -1,10 +1,13 @@
-# JdbcTool
-![输入图片说明](https://images.gitee.com/uploads/images/2021/0630/160626_0bf1b19a_688326.png "屏幕截图.png")
+# <center>sail-jdbc</center>
 
-使用[idea](https://www.jetbrains.com/?from=jdbcTool) 开发
+[//]: # (![输入图片说明]&#40;https://images.gitee.com/uploads/images/2021/0630/160626_0bf1b19a_688326.png "屏幕截图.png"&#41;)
+
+[//]: # ()
+[//]: # (使用[idea]&#40;https://www.jetbrains.com/?from=jdbcTool&#41; 开发)
 #### 介绍
 
-依靠spring-jdbc的动态多源数据库操作工具
+  &nbsp;&nbsp;sail-jdbc是一款开源的关系型数据库操作工具,对数据库实际操作中常见的增、删、改、查做了封装,提供可配置的数据库操作日志功能,从而简化了日常的开发工作.
+  目前已经支持MySql、SqlServer、Oracle、postgresql等主流数据库,取名sail是希望它能为项目运转的中间力量小巧,轻量,便于使用.
 
 #### 特性
 
@@ -16,14 +19,12 @@
 
 #### 使用说明
 
-在classpath下wood.json中以json格式配置数据库信息,也可在环境变量中以参数configFile指定文件名(ex:java -jar demo.jar --configFile=wood.json)
+默认在classpath下wood.json中以json格式配置数据库信息,也可在环境变量中以参数configFile指定文件名(ex:java -jar demo.jar --configFile=wood.json)
 
 - json配置文件示例
 
 ```
 {
-  //是否调试模式 控制控制台日志打印输出
-  "isDebugger": true,
   //多数据源配置
   "dataBaseConfig": [
     {
@@ -70,14 +71,17 @@
     "maxActive": 30
   },
   "logConfig": {
+  //文件日志
     "file": {
       "enable": false,
       "exceptionLogPath": "",
       "toolLogPath": ""
     },
+ //控制台日志  
     "console": {
       "enable": true
     },
+ //超时日志  
     "timeout": {
       "enable": false,
       "maxLostTime": "20000",
@@ -99,11 +103,13 @@ public class StParm implements Serializable {
      * 参数编号
      */
     @FieldColumn("PARM_ID")
+    @JSONField(name = "parmId", alternateNames = {"parmId", "PARM_ID"})
     private String parmId;
     /**
      * 参数分类
      */
     @FieldColumn("CATEGORY")
+    @JSONField(name = "category", alternateNames = {"category", "CATEGORY"})
     private String category;
 }
 ```
@@ -149,6 +155,14 @@ db.insert(BsDiary.class,new BsDiary(){{
 }});
             
 ```
+- 根据id更新
+
+```
+BsDiary diary=db.findRowById(BsDiary.class,"42");
+diary.setDHead("update");
+db.updateById(BsDiary.class,diary);
+```
+
 
 - 关联id单个删除(配合带本工具注解的实体类使用)
 
@@ -206,14 +220,6 @@ db.queryListMap("select  *  from bs_diary ");
 
 ```                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 db.queryPageData("select  *  from bs_diary",1,10,true);
-```
-
-- 根据id更新
-
-```
-BsDiary diary=db.findRowById(BsDiary.class,"42");
-diary.setDHead("update");
-db.updateById(BsDiary.class,diary);
 ```
 
 - 事务
