@@ -85,6 +85,9 @@ public class JdbcHandler {
             PreparedStatement preparedStatement;
             preparedStatement = getConnecting().prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, isUpdate ? ResultSet.CONCUR_UPDATABLE : ResultSet.CONCUR_READ_ONLY);
             for (int i = 0; i < params.length; i++) {
+                if (params[i].getClass().getName().equals("java.lang.Character")) {
+                    params[i] = params[i].toString();
+                }
                 preparedStatement.setObject(i + 1, params[i]);
             }
             return preparedStatement;
@@ -105,6 +108,7 @@ public class JdbcHandler {
 
     private void closeResultSet(ResultSet rs) {
         try {
+            rs.getStatement().close();
             rs.close();
         } catch (SQLException e) {
             LogTool.handleExceptionLog("ResultSet关闭异常", false, e);
@@ -212,7 +216,10 @@ public class JdbcHandler {
         for (int i = 0; i < columList.size(); i++) {
             String columName = columList.get(i);
             String filedName = filedList.get(i);
-            EntityTool.setColumValue(row, filedName, rs.getObject(columName));
+            try {
+                EntityTool.setColumValue(row, filedName, rs.getObject(columName));
+            } catch (SQLException ignored) {
+            }
         }
         return row;
     }
@@ -232,7 +239,11 @@ public class JdbcHandler {
                 for (int i = 0; i < columList.size(); i++) {
                     String columName = columList.get(i);
                     String filedName = filedList.get(i);
-                    EntityTool.setColumValue(row, filedName, rs.getObject(columName));
+                    Object value = null;
+                    try {
+                        EntityTool.setColumValue(row, filedName, rs.getObject(columName));
+                    } catch (SQLException ignored) {
+                    }
                 }
                 res.add(row);
             }
